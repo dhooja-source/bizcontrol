@@ -1,0 +1,1520 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ביזקונטרול</title>
+<style>
+:root{
+  --bg:#0d0f14;--s:#161a23;--s2:#1e2430;--b:#2a3040;
+  --a:#f59e0b;--g:#10b981;--r:#ef4444;--v:#6366f1;
+  --t:#e8eaf0;--m:#6b7280;--d:#9ca3af;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:Arial,sans-serif;background:var(--bg);color:var(--t);min-height:100vh;direction:rtl;}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;}
+.lbox{background:var(--s);border:1px solid var(--b);border-radius:18px;padding:40px;width:100%;max-width:380px;}
+.llogo{font-size:2rem;font-weight:900;color:var(--a);text-align:center;margin-bottom:4px;}
+.llogo span{color:var(--t);}
+.lsub{font-size:.83rem;color:var(--m);text-align:center;margin-bottom:26px;}
+.ltabs{display:flex;gap:5px;margin-bottom:20px;background:var(--s2);border-radius:9px;padding:4px;}
+.ltab{flex:1;padding:8px;border-radius:7px;border:none;cursor:pointer;font-family:Arial,sans-serif;font-size:.83rem;font-weight:600;color:var(--d);background:transparent;}
+.ltab.active{background:var(--a);color:#000;}
+.lform{display:flex;flex-direction:column;gap:11px;}
+.li{width:100%;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:11px 14px;color:var(--t);font-family:Arial,sans-serif;font-size:.9rem;}
+.li:focus{outline:none;border-color:var(--a);}
+.lbtn{width:100%;background:var(--a);color:#000;border:none;border-radius:8px;padding:12px;font-family:Arial,sans-serif;font-size:.95rem;font-weight:700;cursor:pointer;margin-top:3px;}
+.lhint{font-size:.73rem;color:var(--m);text-align:center;margin-top:10px;}
+#l-biz-wrap{display:none;}
+nav{background:var(--s);border-bottom:1px solid var(--b);padding:0 20px;display:flex;align-items:center;justify-content:space-between;height:56px;position:sticky;top:0;z-index:100;}
+.logo{font-size:1.1rem;font-weight:900;color:var(--a);}.logo span{color:var(--t);}
+.nav-r{display:flex;align-items:center;gap:10px;}
+.nav-u{font-size:.78rem;color:var(--m);}
+.nlout{background:transparent;border:1px solid var(--b);color:var(--d);border-radius:7px;padding:5px 11px;cursor:pointer;font-family:Arial,sans-serif;font-size:.76rem;}
+.tabs{display:flex;background:var(--s);border-bottom:1px solid var(--b);padding:0 20px;overflow-x:auto;gap:2px;}
+.tab{padding:10px 16px;font-size:.85rem;font-weight:500;color:var(--m);cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;}
+.tab.active{color:var(--a);border-bottom-color:var(--a);}
+main{padding:20px;max-width:1300px;margin:0 auto;}
+.page{display:none;}.page.active{display:block;}
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(155px,1fr));gap:11px;margin-bottom:22px;}
+.sc{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:14px 16px;}
+.sc-l{font-size:.67rem;color:var(--m);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px;}
+.sc-v{font-size:1.55rem;font-weight:800;}
+.sc-s{font-size:.69rem;color:var(--m);margin-top:2px;}
+.gold{color:var(--a);}.green{color:var(--g);}.red{color:var(--r);}
+.btn{padding:7px 13px;border-radius:7px;border:none;cursor:pointer;font-family:Arial,sans-serif;font-size:.8rem;font-weight:600;}
+.bp{background:var(--a);color:#000;}
+.bg2{background:transparent;color:var(--d);border:1px solid var(--b);}
+.br{background:transparent;color:var(--r);border:1px solid rgba(239,68,68,.3);}
+.bv{background:transparent;color:var(--v);border:1px solid rgba(99,102,241,.3);}
+.bsm{padding:4px 9px;font-size:.73rem;}
+.sh{display:flex;align-items:center;justify-content:space-between;margin-bottom:13px;flex-wrap:wrap;gap:8px;}
+.st{font-size:.92rem;font-weight:700;}
+.tw{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:.83rem;}
+th{text-align:right;padding:8px 12px;font-size:.67rem;font-weight:600;color:var(--m);border-bottom:1px solid var(--b);white-space:nowrap;text-transform:uppercase;letter-spacing:.4px;}
+td{padding:10px 12px;border-bottom:1px solid rgba(42,48,64,.5);color:var(--d);}
+tr:hover td{background:var(--s2);}td:first-child{color:var(--t);font-weight:500;}
+.no-data{text-align:center;color:var(--m);padding:30px;}
+.bcg{display:grid;grid-template-columns:repeat(auto-fill,minmax(275px,1fr));gap:12px;}
+.bc{background:var(--s);border:1px solid var(--b);border-radius:10px;overflow:hidden;}
+.bc-h{padding:12px 16px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;}
+.bc-n{font-weight:700;}.bc-s2{font-size:.72rem;color:var(--m);margin-top:1px;}
+.badge{padding:2px 8px;border-radius:20px;font-size:.66rem;font-weight:600;}
+.badge-g{background:rgba(16,185,129,.15);color:var(--g);}
+.bc-b{padding:12px 16px;}
+.brow{display:flex;justify-content:space-between;align-items:center;padding:5px 0;font-size:.8rem;border-bottom:1px solid rgba(42,48,64,.4);}
+.brow:last-child{border-bottom:none;}.bl{color:var(--m);}.bv2{font-weight:600;}
+.bc-f{padding:9px 16px;border-top:1px solid var(--b);display:flex;gap:6px;flex-wrap:wrap;}
+.wl{display:flex;flex-direction:column;gap:4px;margin-top:8px;}
+.wr{display:flex;align-items:center;justify-content:space-between;background:var(--s2);border-radius:6px;padding:7px 11px;font-size:.81rem;}
+.wr-n{font-weight:600;}.wr-r{font-size:.7rem;color:var(--m);}
+.mo{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);z-index:600;align-items:center;justify-content:center;padding:16px;}
+.mo.open{display:flex;}
+.md{background:var(--s);border:1px solid var(--b);border-radius:14px;width:100%;max-width:460px;max-height:92vh;overflow-y:auto;}
+.mh{padding:15px 20px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;}
+.mt{font-weight:700;font-size:.95rem;}
+.mc{background:none;border:none;color:var(--m);font-size:1.3rem;cursor:pointer;}
+.mb{padding:18px 20px;display:flex;flex-direction:column;gap:12px;}
+.mf{padding:12px 20px;border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end;}
+.fl{display:block;font-size:.73rem;font-weight:600;color:var(--d);margin-bottom:4px;}
+.fc{width:100%;background:var(--bg);border:1px solid var(--b);border-radius:7px;padding:9px 12px;color:var(--t);font-family:Arial,sans-serif;font-size:.86rem;}
+.fc:focus{outline:none;border-color:var(--a);}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+.dbar{display:flex;align-items:center;gap:9px;background:var(--s);border:1px solid var(--b);border-radius:8px;padding:8px 13px;margin-bottom:15px;}
+.dbar label{font-size:.74rem;color:var(--m);font-weight:600;}
+.dbar input{background:transparent;border:none;color:var(--a);font-family:Arial,sans-serif;font-size:.88rem;font-weight:700;cursor:pointer;}
+.dbar input:focus{outline:none;}
+.rcg{display:grid;grid-template-columns:repeat(auto-fill,minmax(255px,1fr));gap:11px;}
+.rc{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:15px;}
+.rc-t{font-weight:700;font-size:.88rem;margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--a);flex-shrink:0;}
+.rc-ins{display:flex;flex-direction:column;gap:8px;}
+.il{font-size:.7rem;color:var(--m);font-weight:600;margin-bottom:3px;}
+.if-w{display:flex;align-items:center;gap:5px;}
+.if-p{font-size:.8rem;color:var(--m);}
+.rif{flex:1;background:var(--bg);border:1px solid var(--b);border-radius:6px;padding:7px 10px;color:var(--t);font-family:Arial,sans-serif;font-size:.85rem;width:100%;}
+.rif:focus{outline:none;border-color:var(--a);}
+.cbadge{background:var(--s2);border-radius:6px;padding:7px 10px;display:flex;justify-content:space-between;align-items:center;font-size:.8rem;}
+.panel-box{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:14px;margin-bottom:14px;}
+.panel-title{font-size:.85rem;font-weight:700;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;}
+.reqs-strip{display:flex;flex-direction:column;gap:7px;}
+.req-chip{background:var(--s2);border-radius:7px;padding:8px 11px;font-size:.78rem;cursor:grab;border:1px solid var(--b);}
+.req-chip.placed{opacity:.5;}
+.sched-layout{display:grid;grid-template-columns:220px 1fr;gap:14px;}
+@media(max-width:700px){.sched-layout{grid-template-columns:1fr;}}
+.side-panel{min-width:0;}
+.wg{overflow-x:auto;}
+.day-col{min-width:90px;vertical-align:top;padding:4px;}
+.day-col.drag-over{background:rgba(245,158,11,.08);}
+.shift-pill{background:var(--s2);border-radius:5px;padding:4px 7px;font-size:.72rem;margin-bottom:4px;display:flex;align-items:center;justify-content:space-between;gap:4px;cursor:pointer;border:1px solid transparent;}
+.shift-pill:hover{border-color:var(--b);}
+.biz-sel{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px;}
+.bsb{padding:5px 11px;border-radius:6px;border:1px solid var(--b);background:transparent;color:var(--d);font-family:Arial,sans-serif;font-size:.78rem;cursor:pointer;}
+.bsb.active{background:var(--a);color:#000;border-color:var(--a);}
+.week-nav{display:flex;align-items:center;gap:8px;margin-bottom:10px;font-size:.85rem;}
+.wn-btn{background:var(--s2);border:1px solid var(--b);color:var(--t);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:Arial,sans-serif;}
+.pcard{background:var(--s2);border:2px solid var(--b);border-radius:8px;padding:10px 12px;cursor:pointer;font-size:.82rem;}
+.pcard.sel{border-color:var(--a);background:rgba(245,158,11,.08);}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.req-card{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:13px 15px;margin-bottom:10px;}
+.req-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:7px;}
+.req-name{font-weight:700;font-size:.88rem;}
+.req-date{font-size:.72rem;color:var(--m);margin-top:1px;}
+.req-stat{padding:2px 8px;border-radius:20px;font-size:.66rem;font-weight:600;}
+.rs-p{background:rgba(245,158,11,.15);color:var(--a);}
+.rs-a{background:rgba(16,185,129,.15);color:var(--g);}
+.rs-r{background:rgba(239,68,68,.15);color:var(--r);}
+.req-det{font-size:.78rem;color:var(--m);margin-top:4px;}
+.req-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px;}
+.week-req-table{width:100%;border-collapse:collapse;font-size:.83rem;}
+.week-req-table th,.week-req-table td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--b);}
+.week-req-table th{font-size:.68rem;color:var(--m);font-weight:600;text-transform:uppercase;}
+.shift-btns{display:flex;flex-wrap:wrap;gap:4px;}
+.sbtn{padding:5px 9px;border-radius:5px;border:1px solid var(--b);background:var(--s2);color:var(--d);font-family:Arial,sans-serif;font-size:.72rem;cursor:pointer;}
+.sbtn.sel-morning{background:rgba(16,185,129,.2);color:var(--g);border-color:var(--g);}
+.sbtn.sel-evening{background:rgba(99,102,241,.2);color:var(--v);border-color:var(--v);}
+.sbtn.sel-full{background:rgba(245,158,11,.2);color:var(--a);border-color:var(--a);}
+.sbtn.sel-off{background:rgba(239,68,68,.2);color:var(--r);border-color:var(--r);}
+.sbtn.sel-yes{background:rgba(16,185,129,.2);color:var(--g);border-color:var(--g);}
+.sbtn.sel-no{background:rgba(239,68,68,.2);color:var(--r);border-color:var(--r);}
+.sbtn:disabled{opacity:.4;cursor:default;}
+.day-label{font-size:.8rem;font-weight:600;}
+.day-label.weekend{color:var(--v);}
+.req-status-cell{font-size:.78rem;font-weight:600;}
+.submit-week-btn{width:100%;background:var(--a);color:#000;border:none;border-radius:8px;padding:11px;font-family:Arial,sans-serif;font-size:.9rem;font-weight:700;cursor:pointer;margin-top:10px;}
+.week-sent{background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.3);border-radius:8px;padding:10px 14px;font-size:.82rem;color:var(--g);margin-bottom:12px;}
+.emp-req-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:9px;margin-bottom:14px;}
+.portal-hero{background:var(--s);border:1px solid var(--b);border-radius:10px;padding:16px;margin-bottom:16px;}
+.portal-title{font-size:1.1rem;font-weight:800;color:var(--a);}
+.portal-sub{font-size:.78rem;color:var(--m);margin-top:3px;}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%) translateY(100px);background:var(--g);color:#000;padding:10px 22px;border-radius:8px;font-size:.85rem;font-weight:600;z-index:999;transition:transform .3s ease;}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.empty{text-align:center;padding:38px 20px;color:var(--m);}
+.print-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:9999;overflow-y:auto;}
+.print-toolbar{position:sticky;top:0;background:#fff;padding:10px 16px;display:flex;gap:10px;border-bottom:1px solid #ddd;z-index:10;}
+@media print{.print-toolbar{display:none;}body{background:#fff;}}
+</style>
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="lbox">
+    <div class="llogo">ביז<span>קונטרול</span></div>
+    <div class="lsub">מערכת ניהול עסקים ועובדים</div>
+    <div class="ltabs">
+      <button class="ltab active" onclick="setLMode('manager',this)">מנהל / בעלים</button>
+      <button class="ltab" onclick="setLMode('employee',this)">עובד</button>
+    </div>
+    <div class="lform">
+      <div id="l-biz-wrap">
+        <label class="fl">סניף</label>
+        <select class="fc" id="l-biz"></select>
+      </div>
+      <input class="li" id="l-name" placeholder="דוד" type="text">
+      <input class="li" id="l-code" placeholder="קוד גישה (1234)" type="password">
+      <button class="lbtn" onclick="doLogin()">כניסה למערכת</button>
+      <div class="lhint">בעלים: קוד 1234 &nbsp;|&nbsp; עובד: שם פרטי בעברית</div>
+    </div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app" style="display:none">
+  <nav>
+    <div class="logo">ביז<span>קונטרול</span></div>
+    <div class="nav-r">
+      <span class="nav-u" id="nav-u"></span>
+      <button class="nlout" onclick="doLogout()">יציאה</button>
+    </div>
+  </nav>
+  <div class="tabs" id="app-tabs"></div>
+  <main id="app-main"></main>
+</div>
+
+<!-- MODALS -->
+<div class="mo" id="mo-biz">
+  <div class="md">
+    <div class="mh"><span class="mt">הוסף סניף</span><button class="mc" onclick="cm('mo-biz')">x</button></div>
+    <div class="mb">
+      <div><label class="fl">שם הסניף</label><input class="fc" id="biz-nm" placeholder="סניף תל אביב"></div>
+      <div><label class="fl">שם המנהל</label><input class="fc" id="biz-mg" placeholder="יוסי כהן"></div>
+      <div><label class="fl">תפקיד</label><input class="fc" id="biz-rl" placeholder="מנהל"></div>
+    </div>
+    <div class="mf"><button class="btn bg2" onclick="cm('mo-biz')">ביטול</button><button class="btn bp" onclick="addBiz()">הוסף</button></div>
+  </div>
+</div>
+
+<div class="mo" id="mo-wrk">
+  <div class="md">
+    <div class="mh"><span class="mt">הוסף עובד</span><button class="mc" onclick="cm('mo-wrk')">x</button></div>
+    <div class="mb">
+      <div><label class="fl">סניף</label><select class="fc" id="w-biz"></select></div>
+      <div><label class="fl">שם העובד</label><input class="fc" id="w-nm" placeholder="ישראל ישראלי"></div>
+      <div><label class="fl">תפקיד</label><input class="fc" id="w-rl" placeholder="קופאי"></div>
+    </div>
+    <div class="mf"><button class="btn bg2" onclick="cm('mo-wrk')">ביטול</button><button class="btn bp" onclick="addWorker()">הוסף</button></div>
+  </div>
+</div>
+
+<div class="mo" id="mo-preset">
+  <div class="md">
+    <div class="mh"><span class="mt" id="preset-title">בחר משמרת</span><button class="mc" onclick="cm('mo-preset')">x</button></div>
+    <div class="mb">
+      <div class="preset-grid" id="preset-row"></div>
+      <div id="custom-times" style="display:none">
+        <div class="frow">
+          <div><label class="fl">התחלה</label><input class="fc" id="sh-start" type="time"></div>
+          <div><label class="fl">סיום</label><input class="fc" id="sh-end" type="time"></div>
+        </div>
+      </div>
+    </div>
+    <div class="mf"><button class="btn bg2" onclick="cm('mo-preset')">ביטול</button><button class="btn bp" onclick="confirmShift()">הוסף משמרת</button></div>
+  </div>
+</div>
+
+<div class="print-overlay" id="print-overlay"></div>
+
+<script>
+// ===
+// STORAGE
+// ===
+var _mem = {};
+function lsGet(k) { try { return localStorage.getItem(k); } catch(e) { return _mem[k] || null; } }
+function lsSet(k, v) {
+  try { localStorage.setItem(k, v); } catch(e) {}
+  _mem[k] = v;
+  if(window.storage) { try { window.storage.set(k, v); } catch(e) {} }
+}
+
+// ===
+// STATE
+// ===
+var DEFAULT_BIZ = [
+  {id:1001, name:'ניו דלי תחנה מרכזית',  manager:'ריקי',   role:'מנהלת'},
+  {id:1002, name:'ניו דלי שרי ישראל',    manager:'יוחאי',  role:'מנהל'},
+  {id:1003, name:'מיני דלי תחנה מרכזית', manager:'אריאל',  role:'מנהל'},
+  {id:1004, name:'אגז תחנה מרכזית',      manager:'אבישג',  role:'מנהלת'},
+  {id:1005, name:'אגז פארק המסילה',       manager:'תמר',    role:'מנהלת'}
+];
+
+var biz  = JSON.parse(lsGet('biz5')  || 'null') || DEFAULT_BIZ.slice();
+var wrk  = JSON.parse(lsGet('wrk5')  || '[]');
+var shf  = JSON.parse(lsGet('shf5')  || '[]');
+var rep  = JSON.parse(lsGet('rep5')  || '[]');
+var reqs = JSON.parse(lsGet('req5')  || '[]');
+
+var weekSelections = {};
+var reqWeekStart = null;
+
+
+function save() {
+  lsSet('biz5', JSON.stringify(biz));
+  lsSet('wrk5', JSON.stringify(wrk));
+  lsSet('shf5', JSON.stringify(shf));
+  lsSet('rep5', JSON.stringify(rep));
+  lsSet('req5', JSON.stringify(reqs));
+}
+
+// ===
+// CONSTANTS
+// ===
+var HOURLY = 48;
+var EMP_MULT = 1.25;
+var PRESETS = [
+  {id:'morning', name:'בוקר',       start:'07:00', end:'15:00', color:'var(--g)'},
+  {id:'evening', name:'ערב',        start:'15:00', end:'23:00', color:'var(--v)'},
+  {id:'full',    name:'מלאה',       start:'09:00', end:'21:00', color:'var(--a)'},
+  {id:'short_m', name:'קצרה בוקר', start:'08:00', end:'13:00', color:'var(--g)'},
+  {id:'short_e', name:'קצרה ערב',  start:'17:00', end:'22:00', color:'var(--v)'},
+  {id:'custom',  name:'מותאם',      start:'',      end:'',       color:'var(--m)'}
+];
+
+// ===
+// UTILS
+// ===
+function today() {
+  return new Date().toISOString().slice(0,10);
+}
+function yesterday() {
+  var d = new Date();
+  d.setDate(d.getDate()-1);
+  return d.toISOString().slice(0,10);
+}
+function fmt(s) {
+  var p = s.split('-');
+  return p[2]+'/'+p[1]+'/'+p[0];
+}
+function dayNames() {
+  return ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+}
+function dayName(s) {
+  return dayNames()[new Date(s+'T12:00').getDay()];
+}
+function addDays(s, n) {
+  var d = new Date(s+'T12:00');
+  d.setDate(d.getDate()+n);
+  return d.toISOString().slice(0,10);
+}
+function getWeekStart(s) {
+  var d = new Date(s+'T12:00');
+  d.setDate(d.getDate()-d.getDay());
+  return d.toISOString().slice(0,10);
+}
+function timeDiff(s, e) {
+  if(!s||!e) return 0;
+  var sp = s.split(':'); var sh = parseInt(sp[0]); var sm = parseInt(sp[1]);
+  var ep = e.split(':'); var eh = parseInt(ep[0]); var em = parseInt(ep[1]);
+  var m = (eh*60+em)-(sh*60+sm);
+  if(m < 0) m += 1440;
+  return Math.round(m/60*10)/10;
+}
+function empCost(h) {
+  return Math.round(h * HOURLY * EMP_MULT);
+}
+function costPct(cash, h) {
+  if(!cash || cash <= 0) return null;
+  return Math.round(empCost(h)/cash*100);
+}
+function cCol(pct) {
+  if(pct === null) return 'var(--m)';
+  if(pct < 25) return 'var(--g)';
+  if(pct < 35) return 'var(--a)';
+  return 'var(--r)';
+}
+function cLbl(pct) {
+  if(pct === null) return '-';
+  if(pct < 25) return 'מעולה';
+  if(pct < 35) return 'סביר';
+  return 'גבוה';
+}
+function schedH(bizId, date) {
+  var total = 0;
+  for(var i=0; i<shf.length; i++) {
+    if(shf[i].bizId===bizId && shf[i].date===date) total += timeDiff(shf[i].start, shf[i].end);
+  }
+  return total;
+}
+function initials(name) {
+  var parts = name.split(' ');
+  var r = '';
+  for(var i=0; i<parts.length; i++) r += parts[i][0]||'';
+  return r.slice(0,2);
+}
+
+// ===
+// UI
+// ===
+function toast(msg, col) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.background = col || 'var(--g)';
+  t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+function om(id) { document.getElementById(id).classList.add('open'); }
+function cm(id) { document.getElementById(id).classList.remove('open'); }
+function fillSel(id, opts) {
+  var el = document.getElementById(id);
+  if(!el) return;
+  if(opts.length) {
+    var h = '';
+    for(var i=0; i<opts.length; i++) h += '<option value="'+opts[i].v+'">'+opts[i].l+'</option>';
+    el.innerHTML = h;
+  } else {
+    el.innerHTML = '<option value="">אין פריטים</option>';
+  }
+}
+
+// Close modals on backdrop click
+document.addEventListener('DOMContentLoaded', function() {
+  var mos = document.querySelectorAll('.mo');
+  for(var i=0; i<mos.length; i++) {
+    (function(o) {
+      o.addEventListener('click', function(e) {
+        if(e.target === o) o.classList.remove('open');
+      });
+    })(mos[i]);
+  }
+});
+
+// ===
+// LOGIN
+// ===
+var curUser = null;
+var lMode = 'manager';
+
+function setLMode(mode, el) {
+  lMode = mode;
+  var tabs = document.querySelectorAll('.ltab');
+  for(var i=0; i<tabs.length; i++) tabs[i].classList.remove('active');
+  el.classList.add('active');
+  var wrap = document.getElementById('l-biz-wrap');
+  if(mode === 'employee') {
+    wrap.style.display = 'block';
+    fillSel('l-biz', biz.map(function(b) { return {v:b.id, l:b.name}; }));
+    document.getElementById('l-code').placeholder = 'שם פרטי שלך בעברית';
+  } else {
+    wrap.style.display = 'none';
+    document.getElementById('l-code').placeholder = 'קוד גישה (1234)';
+  }
+}
+
+function doLogin() {
+  var name = document.getElementById('l-name').value.trim();
+  var code = document.getElementById('l-code').value.trim();
+  if(!name) { alert('יש להזין שם'); return; }
+  if(lMode === 'manager') {
+    if(code !== '1234') { alert('קוד שגוי'); return; }
+    curUser = {type:'manager', name:name};
+  } else {
+    var bizId = parseInt(document.getElementById('l-biz').value);
+    var worker = null;
+    for(var i=0; i<wrk.length; i++) {
+      if(wrk[i].bizId===bizId && wrk[i].name.split(' ')[0]===code) { worker=wrk[i]; break; }
+    }
+    if(!worker) { alert('עובד לא נמצא'); return; }
+    curUser = {type:'employee', name:worker.name, workerId:worker.id, bizId:bizId};
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  document.getElementById('nav-u').textContent = curUser.name;
+  buildApp();
+}
+
+function doLogout() {
+  curUser = null;
+  document.getElementById('login-screen').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('l-name').value = '';
+  document.getElementById('l-code').value = '';
+}
+
+// ===
+// APP BUILD
+// ===
+function buildApp() {
+  var tabs = document.getElementById('app-tabs');
+  var main = document.getElementById('app-main');
+  if(curUser.type === 'manager') {
+    tabs.innerHTML = ''
+      + '<div class="tab active" onclick="sp(\'overview\',this)">לוח בקרה</div>'
+      + '<div class="tab" onclick="sp(\'report\',this)">דיווח יומי</div>'
+      + '<div class="tab" onclick="sp(\'schedule\',this)">סידור עבודה</div>'
+      + '<div class="tab" onclick="sp(\'requests\',this)">בקשות עובדים</div>'
+      + '<div class="tab" onclick="sp(\'history\',this)">היסטוריה</div>'
+      + '<div class="tab" onclick="sp(\'businesses\',this)">סניפים</div>';
+    main.innerHTML = ''
+      + '<div class="page active" id="page-overview"></div>'
+      + '<div class="page" id="page-report"></div>'
+      + '<div class="page" id="page-schedule"></div>'
+      + '<div class="page" id="page-requests"></div>'
+      + '<div class="page" id="page-history"></div>'
+      + '<div class="page" id="page-businesses"></div>';
+    renderOverview();
+  } else {
+    tabs.innerHTML = ''
+      + '<div class="tab active" onclick="sp(\'emp-req\',this)">הגשת בקשות</div>'
+      + '<div class="tab" onclick="sp(\'emp-sched\',this)">הסידור שלי</div>';
+    main.innerHTML = ''
+      + '<div class="page active" id="page-emp-req"></div>'
+      + '<div class="page" id="page-emp-sched"></div>';
+    renderEmpReq();
+  }
+}
+
+function sp(name, el) {
+  var pages = document.querySelectorAll('.page');
+  var tabs2 = document.querySelectorAll('.tab');
+  for(var i=0; i<pages.length; i++) pages[i].classList.remove('active');
+  for(var i=0; i<tabs2.length; i++) tabs2[i].classList.remove('active');
+  document.getElementById('page-'+name).classList.add('active');
+  if(el) el.classList.add('active');
+  var map = {
+    overview:renderOverview, report:renderReport, schedule:renderSchedule,
+    requests:renderRequests, history:renderHistory, businesses:renderBusinesses,
+    'emp-req':renderEmpReq, 'emp-sched':renderEmpSched
+  };
+  if(map[name]) map[name]();
+}
+
+// ===
+// BUSINESSES
+// ===
+function addBiz() {
+  var name = document.getElementById('biz-nm').value.trim();
+  var mgr  = document.getElementById('biz-mg').value.trim();
+  var role = document.getElementById('biz-rl').value;
+  if(!name||!mgr) { alert('יש למלא שם סניף ומנהל'); return; }
+  biz.push({id:Date.now(), name:name, manager:mgr, role:role});
+  save(); cm('mo-biz');
+  document.getElementById('biz-nm').value = '';
+  document.getElementById('biz-mg').value = '';
+  toast('הסניף נוסף!'); renderBusinesses();
+}
+function delBiz(id) {
+  if(!confirm('למחוק סניף? כל הנתונים יימחקו.')) return;
+  biz  = biz.filter(function(b) { return b.id!==id; });
+  wrk  = wrk.filter(function(w) { return w.bizId!==id; });
+  shf  = shf.filter(function(s) { return s.bizId!==id; });
+  rep  = rep.filter(function(r) { return r.bizId!==id; });
+  save(); renderBusinesses(); toast('נמחק','var(--r)');
+}
+function openAddWorker(bizId) {
+  fillSel('w-biz', biz.map(function(b) { return {v:b.id, l:b.name}; }));
+  document.getElementById('w-biz').value = bizId;
+  document.getElementById('w-nm').value = '';
+  document.getElementById('w-rl').value = '';
+  om('mo-wrk');
+}
+function addWorker() {
+  var bizId = parseInt(document.getElementById('w-biz').value);
+  var name  = document.getElementById('w-nm').value.trim();
+  var role  = document.getElementById('w-rl').value.trim();
+  if(!name) { alert('יש להזין שם'); return; }
+  wrk.push({id:Date.now(), bizId:bizId, name:name, role:role});
+  save(); cm('mo-wrk');
+  toast('העובד נוסף!'); renderBusinesses();
+}
+function delWorker(id) {
+  wrk = wrk.filter(function(w) { return w.id!==id; });
+  shf = shf.filter(function(s) { return s.workerId!==id; });
+  save(); renderBusinesses(); toast('הוסר','var(--r)');
+}
+
+function renderBusinesses() {
+  var el = document.getElementById('page-businesses');
+  if(!el) return;
+  var h = '<div class="sh"><div class="st">הסניפים שלי</div>'
+        + '<button class="btn bp" onclick="om(\'mo-biz\')">+ סניף</button></div>';
+  if(!biz.length) {
+    h += '<div class="empty"><div>הוסף את הסניף הראשון</div></div>';
+  } else {
+    h += '<div class="bcg">';
+    for(var i=0; i<biz.length; i++) {
+      var b = biz[i];
+      var bw = wrk.filter(function(w) { return w.bizId===b.id; });
+      var lastArr = rep.filter(function(r) { return r.bizId===b.id; }).sort(function(a,c) { return c.date.localeCompare(a.date); });
+      var last = lastArr[0] || null;
+      h += '<div class="bc">';
+      h += '<div class="bc-h"><div><div class="bc-n">'+b.name+'</div><div class="bc-s2">'+(b.role||'')+': '+b.manager+'</div></div><span class="badge badge-g">פעיל</span></div>';
+      h += '<div class="bc-b">';
+      h += '<div class="brow"><span class="bl">עובדים רשומים</span><span class="bv2">'+bw.length+'</span></div>';
+      h += '<div class="brow"><span class="bl">דיווח אחרון</span><span class="bv2">'+(last?fmt(last.date):'אין')+'</span></div>';
+      if(bw.length) {
+        h += '<div style="font-size:.7rem;color:var(--m);font-weight:600;margin-top:8px;margin-bottom:5px">עובדים:</div>';
+        h += '<div class="wl">';
+        for(var j=0; j<bw.length; j++) {
+          h += '<div class="wr"><div><div class="wr-n">'+bw[j].name+'</div><div class="wr-r">'+(bw[j].role||'-')+'</div></div>';
+          h += '<button class="btn br bsm" onclick="delWorker('+bw[j].id+')">הסר</button></div>';
+        }
+        h += '</div>';
+      }
+      h += '</div>';
+      h += '<div class="bc-f">';
+      h += '<button class="btn bv bsm" onclick="openAddWorker('+b.id+')">+ עובד</button>';
+      h += '<button class="btn br bsm" onclick="delBiz('+b.id+')">מחק סניף</button>';
+      h += '</div></div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+}
+
+// ===
+// SCHEDULE
+// ===
+var schedBiz = null;
+var weekStart = getWeekStart(today());
+var dragWId = null;
+var dragDate = null;
+var dragShift = null; // 'morning' or 'evening'
+var pendingCell = null; // {wid, date, shift}
+
+function renderSchedule() {
+  var el = document.getElementById('page-schedule');
+  if(!el) return;
+  if(!biz.length) { el.innerHTML = '<div class="empty"><div>הוסף סניפים תחילה</div></div>'; return; }
+  if(!schedBiz) schedBiz = biz[0].id;
+
+  var weekEnd = addDays(weekStart, 6);
+  var bizWorkers = wrk.filter(function(w) { return w.bizId===schedBiz; });
+
+  // Day columns: Sun=0 Mon=1 Tue=2 Wed=3 Thu=4 Fri=5 Sat=6
+  // We show: ראשון שני שלישי רביעי חמישי שישי מוצ"ש
+  var dayOrder = [0,1,2,3,4,5,6];
+  var dayLabels = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','מוצש'];
+
+  // Build list of dates for the week by day-of-week index
+  var dateByDow = {};
+  for(var i=0; i<7; i++) {
+    var d = addDays(weekStart, i);
+    var dow = new Date(d+'T12:00').getDay();
+    dateByDow[dow] = d;
+  }
+
+  // --- Header ---
+  var h = '';
+
+  // Biz selector + nav
+  h += '<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-bottom:12px">';
+  h += '<div class="biz-sel">';
+  for(var i=0; i<biz.length; i++) {
+    h += '<button class="bsb'+(biz[i].id===schedBiz?' active':'')+'" onclick="setSchedBiz('+biz[i].id+')">'+biz[i].name+'</button>';
+  }
+  h += '</div></div>';
+
+  h += '<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap">';
+  h += '<button class="wn-btn" onclick="changeWeek(-1)">&#8249; שבוע קודם</button>';
+  h += '<span style="font-weight:700;font-size:.9rem">'+fmt(weekStart)+' -- '+fmt(weekEnd)+'</span>';
+  h += '<button class="wn-btn" onclick="changeWeek(1)">שבוע הבא &#8250;</button>';
+  h += '<button class="btn bg2 bsm" onclick="exportSchedule()">ייצוא PDF</button>';
+  h += '</div>';
+
+  // Workers panel (drag source)
+  h += '<div style="display:flex;gap:14px;flex-wrap:wrap;align-items:flex-start">';
+
+  // LEFT: workers list
+  h += '<div style="min-width:120px;background:var(--s);border:1px solid var(--b);border-radius:10px;padding:12px">';
+  h += '<div style="font-size:.72rem;color:var(--m);font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">עובדים</div>';
+  if(!bizWorkers.length) {
+    h += '<div style="font-size:.78rem;color:var(--m)">אין עובדים</div>';
+  } else {
+    for(var i=0; i<bizWorkers.length; i++) {
+      var w = bizWorkers[i];
+      h += '<div class="worker-chip" draggable="true"'
+         + ' data-wid="'+w.id+'"'
+         + ' style="background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:7px 10px;margin-bottom:6px;cursor:grab;font-size:.82rem;font-weight:600">'
+         + w.name
+         + '</div>';
+    }
+  }
+  h += '</div>';
+
+  // RIGHT: schedule grid
+  h += '<div style="flex:1;min-width:0;overflow-x:auto">';
+  h += '<table style="border-collapse:collapse;width:100%;min-width:560px">';
+
+  // Header row
+  h += '<thead><tr>';
+  h += '<th style="width:70px;padding:6px 8px;font-size:.72rem;color:var(--m);text-align:right;border-bottom:2px solid var(--b)">משמרת</th>';
+  for(var i=0; i<dayOrder.length; i++) {
+    var dow = dayOrder[i];
+    var date = dateByDow[dow];
+    var isWE = dow===5||dow===6;
+    h += '<th style="padding:6px 8px;font-size:.75rem;font-weight:700;border-bottom:2px solid var(--b);text-align:center;color:'+(isWE?'var(--v)':'var(--t)')+';min-width:110px">';
+    h += dayLabels[i];
+    if(date) h += '<br><span style="font-size:.68rem;color:var(--m);font-weight:400">'+fmt(date).slice(0,5)+'</span>';
+    h += '</th>';
+  }
+  h += '</tr></thead><tbody>';
+
+  // MORNING section header
+  h += '<tr><td colspan="8" style="background:rgba(16,185,129,.08);padding:5px 10px;font-size:.72rem;font-weight:700;color:var(--g);letter-spacing:.5px;border-top:1px solid rgba(16,185,129,.2)">משמרת בוקר</td></tr>';
+
+  // Morning rows - one per slot (we show up to 8 slots)
+  var morningSlots = getMorningSlots(schedBiz, dateByDow);
+  for(var row=0; row<morningSlots; row++) {
+    h += '<tr>';
+    h += '<td style="padding:4px 8px;font-size:.7rem;color:var(--m);border-bottom:1px solid rgba(42,48,64,.3);text-align:right;white-space:nowrap">'+('0'+(8+row)).slice(-2)+':00</td>';
+    for(var i=0; i<dayOrder.length; i++) {
+      var dow = dayOrder[i];
+      var date = dateByDow[dow];
+      // Saturday (motzash) has no morning
+      if(dow===6) {
+        h += '<td style="background:rgba(42,48,64,.15);border-bottom:1px solid rgba(42,48,64,.2)"></td>';
+        continue;
+      }
+      var cellShifts = getShiftsInCell(schedBiz, date, 'morning', row);
+      h += buildCell(date, 'morning', row, cellShifts, bizWorkers);
+    }
+    h += '</tr>';
+  }
+
+  // EVENING section header
+  h += '<tr><td colspan="8" style="background:rgba(99,102,241,.08);padding:5px 10px;font-size:.72rem;font-weight:700;color:var(--v);letter-spacing:.5px;border-top:2px solid rgba(99,102,241,.2)">משמרת ערב</td></tr>';
+
+  var eveningSlots = getEveningSlots(schedBiz, dateByDow);
+  for(var row=0; row<eveningSlots; row++) {
+    h += '<tr>';
+    h += '<td style="padding:4px 8px;font-size:.7rem;color:var(--m);border-bottom:1px solid rgba(42,48,64,.3);text-align:right;white-space:nowrap">'+(row===0?'17:00':'סגירה')+'</td>';
+    for(var i=0; i<dayOrder.length; i++) {
+      var dow = dayOrder[i];
+      var date = dateByDow[dow];
+      // Friday has no evening
+      if(dow===5) {
+        h += '<td style="background:rgba(42,48,64,.15);border-bottom:1px solid rgba(42,48,64,.2)"></td>';
+        continue;
+      }
+      var cellShifts = getShiftsInCell(schedBiz, date, 'evening', row);
+      h += buildCell(date, 'evening', row, cellShifts, bizWorkers);
+    }
+    h += '</tr>';
+  }
+
+  // Totals row
+  h += '<tr style="background:rgba(245,158,11,.05)">';
+  h += '<td style="padding:6px 8px;font-size:.7rem;color:var(--a);font-weight:700;border-top:2px solid var(--b)">סה"כ ש\'</td>';
+  for(var i=0; i<dayOrder.length; i++) {
+    var dow = dayOrder[i];
+    var date = dateByDow[dow];
+    var total = 0;
+    if(date) {
+      var dayShifts = shf.filter(function(s) { return s.bizId===schedBiz&&s.date===date; });
+      for(var j=0; j<dayShifts.length; j++) total += timeDiff(dayShifts[j].start, dayShifts[j].end);
+    }
+    h += '<td style="padding:6px 8px;text-align:center;font-size:.78rem;font-weight:700;color:var(--a);border-top:2px solid var(--b)">'+(total>0?total+'h':'-')+'</td>';
+  }
+  h += '</tr>';
+
+  h += '</tbody></table>';
+  h += '</div>'; // end grid
+  h += '</div>'; // end flex
+
+  el.innerHTML = h;
+
+  // Attach drag events to worker chips
+  var chips = el.querySelectorAll('.worker-chip');
+  for(var i=0; i<chips.length; i++) {
+    (function(chip) {
+      chip.addEventListener('dragstart', function(e) {
+        dragWId = parseInt(chip.getAttribute('data-wid'));
+        e.dataTransfer.setData('text/plain', String(dragWId));
+        chip.style.opacity = '0.4';
+      });
+      chip.addEventListener('dragend', function() {
+        chip.style.opacity = '';
+        dragWId = null;
+        dragDate = null;
+        dragShift = null;
+      });
+    })(chips[i]);
+  }
+
+  // Attach drop events to cells
+  var cells = el.querySelectorAll('.sched-cell');
+  for(var i=0; i<cells.length; i++) {
+    (function(cell) {
+      cell.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        cell.style.background = 'rgba(245,158,11,.12)';
+      });
+      cell.addEventListener('dragleave', function() {
+        cell.style.background = '';
+      });
+      cell.addEventListener('drop', function(e) {
+        e.preventDefault();
+        cell.style.background = '';
+        if(!dragWId) return;
+        var date2  = cell.getAttribute('data-date');
+        var shift2 = cell.getAttribute('data-shift');
+        dropWorker(dragWId, date2, shift2);
+        dragWId = null;
+      });
+    })(cells[i]);
+  }
+}
+
+function getMorningSlots(bizId, dateByDow) {
+  var max = 4;
+  for(var dow=0; dow<=5; dow++) {
+    var d = dateByDow[dow];
+    if(!d) continue;
+    var ms = shf.filter(function(s) { return s.bizId===bizId&&s.date===d&&isMorning(s.start); });
+    if(ms.length > max) max = ms.length;
+  }
+  return Math.max(max, 4);
+}
+
+function getEveningSlots(bizId, dateByDow) {
+  var max = 4;
+  for(var dow=0; dow<=6; dow++) {
+    if(dow===5) continue; // no evening friday
+    var d = dateByDow[dow];
+    if(!d) continue;
+    var es = shf.filter(function(s) { return s.bizId===bizId&&s.date===d&&!isMorning(s.start); });
+    if(es.length > max) max = es.length;
+  }
+  return Math.max(max, 4);
+}
+
+function isMorning(startTime) {
+  if(!startTime) return true;
+  var h = parseInt(startTime.split(':')[0]);
+  return h < 15;
+}
+
+function getShiftsInCell(bizId, date, shift, row) {
+  if(!date) return [];
+  var allDay = shf.filter(function(s) {
+    return s.bizId===bizId && s.date===date && (shift==='morning' ? isMorning(s.start) : !isMorning(s.start));
+  });
+  // Sort by start time
+  allDay.sort(function(a,b) { return a.start.localeCompare(b.start); });
+  return row < allDay.length ? [allDay[row]] : [];
+}
+
+function buildCell(date, shift, row, cellShifts, bizWorkers) {
+  var bg = '';
+  if(shift==='morning') bg = 'rgba(16,185,129,.03)';
+  else bg = 'rgba(99,102,241,.03)';
+
+  var h = '<td class="sched-cell" data-date="'+date+'" data-shift="'+shift+'"'
+        + ' style="padding:4px 6px;border-bottom:1px solid rgba(42,48,64,.25);vertical-align:middle;background:'+bg+';min-width:110px">';
+
+  if(cellShifts.length > 0) {
+    var s = cellShifts[0];
+    var wname = '';
+    for(var i=0; i<bizWorkers.length; i++) { if(bizWorkers[i].id===s.workerId) { wname=bizWorkers[i].name; break; } }
+    var col = shift==='morning' ? 'var(--g)' : 'var(--v)';
+    var isSgira = s.end==='00:00'||s.end===''||s.end==='סגירה';
+    var timeLabel = s.start+'-'+(isSgira?'סגירה':s.end);
+    h += '<div style="display:flex;align-items:center;justify-content:space-between;background:'+bg+';border:1px solid '+col+'33;border-radius:6px;padding:4px 7px">';
+    h += '<div>';
+    h += '<div style="font-weight:700;font-size:.82rem;color:var(--t)">'+wname+'</div>';
+    h += '<div style="font-size:.69rem;color:'+col+'">'+timeLabel+'</div>';
+    h += '</div>';
+    h += '<button onclick="delShift('+s.id+')" style="background:none;border:none;color:var(--r);cursor:pointer;font-size:.85rem;padding:0;line-height:1">x</button>';
+    h += '</div>';
+  } else {
+    // Empty drop zone
+    h += '<div style="height:38px;border:1px dashed rgba(42,48,64,.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.68rem;color:rgba(107,114,128,.4)">גרור עובד</div>';
+  }
+
+  h += '</td>';
+  return h;
+}
+
+function dropWorker(wid, date, shift) {
+  if(!date || !shift) return;
+  // Open time picker
+  pendingCell = {wid:wid, date:date, shift:shift};
+  var w = null;
+  for(var i=0; i<wrk.length; i++) { if(wrk[i].id===wid) { w=wrk[i]; break; } }
+  var wname = w ? w.name : '';
+
+  // Set defaults based on shift
+  var defStart = shift==='morning' ? '08:00' : '17:00';
+  var defEnd   = shift==='morning' ? '16:00' : '00:00';
+
+  document.getElementById('sh-start').value = defStart;
+  document.getElementById('sh-end').value   = defEnd;
+  document.getElementById('preset-title').textContent = wname+' - '+fmt(date)+' ('+dayName(date)+') - '+(shift==='morning'?'בוקר':'ערב');
+
+  // Build preset options for this shift
+  var row = document.getElementById('preset-row');
+  var opts = shift==='morning'
+    ? [
+        {id:'m1', name:'08:00-16:00', start:'08:00', end:'16:00'},
+        {id:'m2', name:'09:00-17:00', start:'09:00', end:'17:00'},
+        {id:'m3', name:'10:00-17:00', start:'10:00', end:'17:00'},
+        {id:'m4', name:'11:00-18:00', start:'11:00', end:'18:00'},
+        {id:'m5', name:'12:00-17:00', start:'12:00', end:'17:00'},
+        {id:'mc', name:'מותאם',       start:'',      end:''}
+      ]
+    : [
+        {id:'e1', name:'15:00-סגירה', start:'15:00', end:'00:00'},
+        {id:'e2', name:'16:00-סגירה', start:'16:00', end:'00:00'},
+        {id:'e3', name:'17:00-סגירה', start:'17:00', end:'00:00'},
+        {id:'e4', name:'15:00-עד הצוהר', start:'15:00', end:'20:00'},
+        {id:'e5', name:'17:00-עד הצוהר', start:'17:00', end:'20:00'},
+        {id:'ec', name:'מותאם',       start:'',      end:''}
+      ];
+
+  var selectedPresetId = opts[0].id;
+  document.getElementById('sh-start').value = opts[0].start;
+  document.getElementById('sh-end').value   = opts[0].end;
+  document.getElementById('custom-times').style.display = 'none';
+
+  var ph = '';
+  for(var i=0; i<opts.length; i++) {
+    var p = opts[i];
+    ph += '<div class="pcard'+(i===0?' sel':'')+'" id="dpc-'+p.id+'"'
+        + ' onclick="pickDynPreset(\''+p.id+'\',\''+p.start+'\',\''+p.end+'\',this)"'
+        + ' style="border-color:'+(shift==='morning'?'var(--g)':'var(--v)')+'">';
+    ph += '<div style="color:'+(shift==='morning'?'var(--g)':'var(--v)')+';font-weight:700;font-size:.82rem">'+p.name+'</div>';
+    ph += '</div>';
+  }
+  row.innerHTML = ph;
+  om('mo-preset');
+}
+
+function pickDynPreset(id, start, end, el) {
+  var cards = document.querySelectorAll('.pcard');
+  for(var i=0; i<cards.length; i++) cards[i].classList.remove('sel');
+  el.classList.add('sel');
+  if(!start) {
+    document.getElementById('custom-times').style.display = 'block';
+  } else {
+    document.getElementById('custom-times').style.display = 'none';
+    document.getElementById('sh-start').value = start;
+    document.getElementById('sh-end').value   = end;
+  }
+}
+
+function confirmShift() {
+  var start = document.getElementById('sh-start').value;
+  var end   = document.getElementById('sh-end').value;
+  if(!start) { alert('יש לבחור שעות'); return; }
+  if(!pendingCell) return;
+  shf.push({
+    id: Date.now(),
+    bizId:    schedBiz,
+    workerId: pendingCell.wid,
+    date:     pendingCell.date,
+    start:    start,
+    end:      end,
+    preset:   pendingCell.shift
+  });
+  save(); cm('mo-preset');
+  toast('משמרת נוספה!');
+  renderSchedule();
+}
+
+function setSchedBiz(id) { schedBiz=id; renderSchedule(); }
+function changeWeek(d)   { weekStart=addDays(weekStart, d*7); renderSchedule(); }
+function delShift(id)    { shf=shf.filter(function(s){return s.id!==id;}); save(); renderSchedule(); toast('המשמרת נמחקה','var(--r)'); }
+
+
+// ===
+// EXPORT PDF
+// ===
+
+// ===
+// REPORT & OTHER SECTIONS
+// ===
+
+function renderOverview(){
+  var el=document.getElementById('page-overview');
+  if(!el)return;
+  var date=yesterday();
+  var day=rep.filter(function(r){return r.date===date;});
+  var totalCash=day.reduce(function(a,r){return a+r.cash;},0);
+  var totalH=day.reduce(function(a,r){return a+r.hours;},0);
+  var totEmp=empCost(totalH);
+  var totPct=costPct(totalCash,totalH);
+  var reported=day.length; var total=biz.length;
+  var pendingReqs=reqs.filter(function(r){return r.status==='pending';}).length;
+
+  el.innerHTML =
+    '<div class="dbar"><label>נתונים ליום:</label><input type="date" id="ov-date" value="'+date+'" onchange="renderOvTable()"></div>' +
+    '<div class="stats">' +
+    '<div class="sc"><div class="sc-l">סך קופה</div><div class="sc-v gold">NIS'+totalCash.toLocaleString()+'</div><div class="sc-s">'+fmt(date)+'</div></div>' +
+    '<div class="sc"><div class="sc-l">שעות עובדים</div><div class="sc-v green">'+totalH+'</div><div class="sc-s">שעות</div></div>' +
+    '<div class="sc"><div class="sc-l">עלות מעביד</div><div class="sc-v red">NIS'+totEmp.toLocaleString()+'</div><div class="sc-s">כולל נטל מעביד</div></div>' +
+    '<div class="sc"><div class="sc-l">% עלות מהמחזור</div><div class="sc-v" style="color:'+cCol(totPct)+'">'+(totPct!==null?totPct+'%':'-')+'</div><div class="sc-s">'+cLbl(totPct)+'</div></div>' +
+    '<div class="sc"><div class="sc-l">דיווחים שהגיעו</div><div class="sc-v" style="color:'+(reported===total&&total>0?'var(--g)':'var(--a)')+'">'+reported+'/'+total+'</div><div class="sc-s">סניפים</div></div>' +
+    (pendingReqs?'<div class="sc"><div class="sc-l">בקשות ממתינות</div><div class="sc-v" style="color:var(--a)">'+pendingReqs+'</div><div class="sc-s">מעובדים</div></div>':'') +
+    '</div>' +
+    '<div class="sh"><div class="st">פירוט לפי סניף</div></div>' +
+    '<div class="tw"><table><thead><tr><th>סניף</th><th>מנהל</th><th>סך קופה</th><th>שעות עובדים</th><th>עלות מעביד</th><th>% מהמחזור</th><th>דווח ע"י</th></tr></thead><tbody id="ov-tbody"></tbody></table></div>';
+  renderOvTable();
+}
+
+function renderOvTable(){
+  var date=(document.getElementById('ov-date') ? document.getElementById('ov-date').value : '')||yesterday();
+  var day=rep.filter(function(r){return r.date===date;});
+  var tbody=document.getElementById('ov-tbody');
+  if(!tbody)return;
+  if(!biz.length){tbody.innerHTML='<tr><td colspan="7" class="no-data">הוסף סניפים תחילה</td></tr>';return;}
+  tbody.innerHTML=biz.map(function(b){
+    var r=day.find(function(r){return r.bizId===b.id;});
+    var pct=r?costPct(r.cash,r.hours):null;
+    return '<tr>' +
+      '<td>'+b.name+'</td><td>'+b.manager+'</td>' +
+      '<td style="color:var(--a);font-weight:700">'+(r?'NIS'+r.cash.toLocaleString():'<span style="color:var(--r)">לא דווח</span>')+'</td>' +
+      '<td>'+(r?r.hours+' sh':'-')+'</td>' +
+      '<td>'+(r?'NIS'+empCost(r.hours).toLocaleString():'-')+'</td>' +
+      '<td style="color:'+cCol(pct)+';font-weight:700">'+(pct!==null?pct+'%':'-')+'</td>' +
+      '<td>'+(r?(r.reporter||'-'):'-')+'</td>' +
+      '</tr>';
+  }).join('');
+}
+
+function renderReport(){
+  var el=document.getElementById('page-report');
+  if(!el)return;
+  el.innerHTML='<div class="sh"><div class="st">דיווח יומי - קופה בלבד</div></div>\n    <div class="dbar"><label>תאריך:</label><input type="date" id="rep-date" onchange="renderRepCards()" value="'+yesterday()+'"></div>\n    <div class="rcg" id="rep-cards"></div>';
+  renderRepCards();
+}
+
+function renderRepCards() {
+  var el = document.getElementById('page-report');
+  if(!el) return;
+  if(!biz.length) { el.innerHTML = '<div class="empty"><div>הוסף סניפים תחילה</div></div>'; return; }
+  var date = today();
+  var h = '<div class="sh"><div class="st">דיווח יומי - קופה</div></div>';
+  h += '<div class="rcg">';
+  for(var i=0; i<biz.length; i++) {
+    var b = biz[i];
+    var existing = null;
+    for(var j=0; j<rep.length; j++) { if(rep[j].bizId===b.id && rep[j].date===date) { existing=rep[j]; break; } }
+    var autoH = schedH(b.id, date);
+    var hasSched = autoH > 0;
+    h += '<div class="rc">';
+    h += '<div class="rc-t"><div class="dot"></div>'+b.name+'</div>';
+    if(existing) {
+      var pct = costPct(existing.cash, existing.hours);
+      h += '<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.2);border-radius:8px;padding:10px;font-size:.82rem">';
+      h += '<div style="color:var(--g);font-weight:700;margin-bottom:5px">דווח!</div>';
+      h += '<div>קופה: <strong>NIS '+existing.cash.toLocaleString()+'</strong></div>';
+      h += '<div>שעות: <strong>'+existing.hours+'</strong></div>';
+      if(pct!==null) h += '<div>עלות: <strong style="color:'+cCol(pct)+'">'+pct+'%</strong></div>';
+      h += '<button class="btn br bsm" style="margin-top:8px" onclick="delRep('+existing.id+')">מחק דיווח</button>';
+      h += '</div>';
+    } else {
+      h += '<div class="rc-ins">';
+      h += '<div><div class="il">סך קופה (NIS)</div>';
+      h += '<div class="if-w"><span class="if-p">NIS</span>';
+      h += '<input class="rif" type="number" id="cash-'+b.id+'" placeholder="0" min="0"></div></div>';
+      h += '<div><div class="il">שעות עובדים '+(hasSched?'(מהסידור)':'(הזן ידנית)')+'</div>';
+      h += '<input class="rif" type="number" id="hrs-'+b.id+'" value="'+(autoH||'')+'" placeholder="0" min="0" step="0.5"'+(hasSched?' readonly':'')+' ></div>';
+      h += '<div id="pv-'+b.id+'" style="display:none" class="cbadge">';
+      h += '<span style="color:var(--m)">עלות: <strong id="pc-'+b.id+'"></strong></span>';
+      h += '<span id="pp-'+b.id+'" style="font-weight:700"></span></div>';
+      h += '<div><div class="il">שם המדווח</div><input class="rif" type="text" id="rp-'+b.id+'" placeholder="שמך"></div>';
+      h += '<button class="btn bp" style="width:100%" onclick="doSubmitRep('+b.id+')">שמור דיווח</button>';
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+  h += '</div>';
+  el.innerHTML = h;
+  // Attach oninput after render
+  for(var i=0; i<biz.length; i++) {
+    (function(bid, ah) {
+      var cashEl = document.getElementById('cash-'+bid);
+      var hrsEl  = document.getElementById('hrs-'+bid);
+      if(cashEl) cashEl.oninput = function() { prevCost(bid, ah); };
+      if(hrsEl)  hrsEl.oninput  = function() { prevCost(bid, null); };
+    })(biz[i].id, autoH);
+  }
+}
+
+function doSubmitRep(bizId) {
+  var cashEl = document.getElementById('cash-'+bizId);
+  var hrsEl  = document.getElementById('hrs-'+bizId);
+  var rpEl   = document.getElementById('rp-'+bizId);
+  var cash  = parseFloat(cashEl ? cashEl.value : '') || 0;
+  var hours = parseFloat(hrsEl  ? hrsEl.value  : '') || 0;
+  var reporter = rpEl ? rpEl.value.trim() : '';
+  if(cash===0 && hours===0) { alert('יש להזין לפחות ערך אחד'); return; }
+  rep.push({id:Date.now(), bizId:bizId, date:today(), cash:cash, hours:hours, reporter:reporter});
+  save(); toast('הדיווח נשמר!'); renderRepCards();
+}
+
+
+function prevCost(bizId, autoH) {
+  var cashEl = document.getElementById('cash-'+bizId);
+  var hrsEl  = document.getElementById('hrs-'+bizId);
+  var pvEl   = document.getElementById('pv-'+bizId);
+  var pcEl   = document.getElementById('pc-'+bizId);
+  var ppEl   = document.getElementById('pp-'+bizId);
+  if(!pvEl) return;
+  var cash  = parseFloat(cashEl ? cashEl.value : '') || 0;
+  var hours = parseFloat(hrsEl  ? hrsEl.value  : '') || 0;
+  if(cash>0 && hours>0) {
+    var cost = empCost(hours);
+    var pct  = costPct(cash, hours);
+    if(pcEl) pcEl.textContent = 'NIS '+cost.toLocaleString();
+    if(ppEl) { ppEl.textContent = (pct!==null?pct+'%':'-'); ppEl.style.color = cCol(pct); }
+    pvEl.style.display = 'flex';
+  } else {
+    pvEl.style.display = 'none';
+  }
+}
+
+
+function delRep(id){ rep=rep.filter(function(r){return r.id!==id;}); save(); renderRepCards(); }
+
+function renderHistory(){
+  var el=document.getElementById('page-history');
+  if(!el)return;
+  var html='<div class="sh"><div class="st">היסטוריית דיווחים</div></div>';
+  html+='<div class="tw"><table><thead><tr><th>תאריך</th><th>סניף</th><th>סך קופה</th><th>שעות</th><th>עלות מעביד</th><th>% מהמחזור</th><th>מדווח</th><th></th></tr></thead><tbody>';
+  if(!rep.length){ html+='<tr><td colspan="8" class="no-data">אין דיווחים עדיין</td></tr>'; }
+  else {
+    rep.slice().sort(function(a,b){ return b.date.localeCompare(a.date)||b.id-a.id; }).forEach(function(r){
+      var b2=biz.find(function(b){ return b.id===r.bizId; });
+      var pct=costPct(r.cash,r.hours);
+      var bname = b2 ? b2.name : '?';
+      var pctStr = pct!==null ? pct+'%' : '-';
+      var rep2 = r.reporter || '-';
+      html+='<tr>';
+      html+='<td>'+fmt(r.date)+'</td>';
+      html+='<td>'+bname+'</td>';
+      html+='<td style="color:var(--a);font-weight:700">NIS'+r.cash.toLocaleString()+'</td>';
+      html+='<td>'+r.hours+' sh</td>';
+      html+='<td>NIS'+empCost(r.hours).toLocaleString()+'</td>';
+      html+='<td style="color:'+cCol(pct)+';font-weight:700">'+pctStr+'</td>';
+      html+='<td>'+rep2+'</td>';
+      html+='<td><button class="btn br bsm" onclick="delRepH('+r.id+')">מחק</button></td>';
+      html+='</tr>';
+    });
+  }
+  html+='</tbody></table></div>';
+  el.innerHTML=html;
+}
+
+function delRepH(id){ rep=rep.filter(function(r){return r.id!==id;}); save(); renderHistory(); toast('נמחק','var(--r)'); }
+
+function renderRequests(){
+  var el=document.getElementById('page-requests');
+  if(!el)return;
+  var pending=reqs.filter(function(r){return r.status==='pending';});
+  var done=reqs.filter(function(r){return r.status!=='pending';});
+  var html='<div class="sh"><div class="st">בקשות עובדים</div></div>';
+
+  if(!reqs.length){
+    html+='<div class="empty"><div class="empty-icon"></div><div>אין בקשות עדיין</div></div>';
+  } else {
+    if(pending.length){
+      html+='<div class="st" style="margin-bottom:10px;color:var(--a)"> ממתינות לאישור ('+pending.length+')</div>';
+      html+='<div class="req-grid" style="margin-bottom:22px">'+pending.map(function(r){return reqCard(r,true);}).join('')+'</div>';
+    }
+    if(done.length){
+      html+='<div class="st" style="margin-bottom:10px">טופלו</div>';
+      html+='<div class="req-grid">'+done.map(function(r){return reqCard(r,false);}).join('')+'</div>';
+    }
+  }
+  el.innerHTML=html;
+}
+
+function reqCard(r, showAct){
+  var w=wrk.find(function(x){return x.id===r.workerId;});
+  var b2=biz.find(function(b){return b.id===r.bizId;});
+  var p=PRESETS.find(function(x){return x.id===r.presetId;});
+  var presetLabel2={morning:'בוקר (07-15)',evening:'ערב (15-23)',full:'כל היום (09-21)',short_m:'קצרה בוקר',short_e:'קצרה ערב',off:'לא בכלל',yes:'כן - זמין',no:'לא זמין',custom:'מותאם'}[r.presetId]||r.presetId;
+  var sc={pending:'rs-p',approved:'rs-a',rejected:'rs-r'}[r.status];
+  var sl={pending:'ממתין',approved:'v אושר',rejected:'X נדחה'}[r.status];
+  return '<div class="req-card">' +
+    '<div class="req-top">' +
+    '<div><div class="req-name">'+(w?w.name:'?')+'</div><div class="req-date">'+(b2?b2.name:'')+'</div></div>' +
+    '<span class="req-stat '+sc+'">'+sl+'</span>' +
+    '</div>' +
+    '<div class="req-det"> '+fmt(r.date)+' | '+dayName(r.date)+'</div>' +
+    '<div class="req-det"> '+(presetLabel2||'?')+'</div>' +
+    (r.note?'<div class="req-det"> '+r.note+'</div>':'') +
+    (showAct?'<div style="display:flex;gap:6px;margin-top:9px">' +
+      '<button class="btn bsm" style="background:var(--g);color:#000" onclick="approveReq('+r.id+')">v אשר</button>' +
+      '<button class="btn br bsm" onclick="rejectReq('+r.id+')">X דחה</button>' +
+      '</div>':'') +
+    '</div>';
+}
+
+function approveReq(id){
+  var r=reqs.find(function(x){return x.id===id;}); if(!r)return;
+  r.status='approved';
+  var p=PRESETS.find(function(x){return x.id===r.presetId;});
+  // only add shift if it's a real shift type (not off/no)
+  if(p&&p.start&&r.presetId!=='off'&&r.presetId!=='no'){
+    shf.push({id:Date.now(),bizId:r.bizId,workerId:r.workerId,date:r.date,start:p.start,end:p.end,preset:p.id,fromReq:true});
+  }
+  save(); renderRequests(); toast('אושר! המשמרת נוספה לסידור.');
+}
+function rejectReq(id){
+  var r=reqs.find(function(x){return x.id===id;}); if(!r)return;
+  r.status='rejected'; save(); renderRequests(); toast('נדחה','var(--r)');
+}
+
+// ===
+// EMPLOYEE PORTAL - WEEKLY REQUEST TABLE
+// ===
+
+// weekSelections: { dateStr: 'morning'|'evening'|'full'|'off'|'yes'|'no'|null }
+// ===
+// EMPLOYEE PORTAL
+// ===
+function tdSel(btn) {
+  var d = btn.getAttribute('data-d');
+  var v = btn.getAttribute('data-v');
+  toggleDaySel(d, v);
+}
+
+function toggleDaySel(date, val) {
+  weekSelections[date] = weekSelections[date]===val ? null : val;
+  renderEmpReq();
+}
+
+function changeReqWeek(dir) {
+  reqWeekStart = addDays(reqWeekStart, dir*7);
+  weekSelections = {};
+  renderEmpReq();
+}
+
+function submitWeekReqs() {
+  var keys = Object.keys(weekSelections);
+  var added = 0;
+  for(var i=0; i<keys.length; i++) {
+    var date = keys[i];
+    var presetId = weekSelections[date];
+    if(!presetId) continue;
+    var dup = false;
+    for(var j=0; j<reqs.length; j++) {
+      if(reqs[j].workerId===curUser.workerId && reqs[j].date===date && reqs[j].status!=='rejected') { dup=true; break; }
+    }
+    if(!dup) {
+      reqs.push({id:Date.now()+added, workerId:curUser.workerId, bizId:curUser.bizId, date:date, presetId:presetId, note:'', status:'pending'});
+      added++;
+    }
+  }
+  if(!added) { toast('סמן לפחות יום אחד','var(--r)'); return; }
+  save();
+  weekSelections = {};
+  toast('נשלחו '+added+' בקשות למנהל!');
+  renderEmpReq();
+}
+
+function renderEmpReq() {
+  var el = document.getElementById('page-emp-req');
+  if(!el || !curUser) return;
+  if(!reqWeekStart) reqWeekStart = getWeekStart(addDays(today(), 7));
+
+  var wEnd = addDays(reqWeekStart, 6);
+  var myReqs = [];
+  for(var i=0; i<reqs.length; i++) { if(reqs[i].workerId===curUser.workerId) myReqs.push(reqs[i]); }
+
+  var weekDates = [];
+  for(var i=0; i<7; i++) weekDates.push(addDays(reqWeekStart, i));
+  var submittedCount = 0;
+  for(var i=0; i<weekDates.length; i++) {
+    for(var j=0; j<myReqs.length; j++) {
+      if(myReqs[j].date===weekDates[i] && myReqs[j].status!=='rejected') { submittedCount++; break; }
+    }
+  }
+  var alreadySubmitted = submittedCount >= 5;
+
+  var h = '<div class="portal-hero"><div class="portal-title">שלום, '+curUser.name+'!</div>';
+  h += '<div class="portal-sub">סמן זמינות לשבוע - המנהל יאשר</div></div>';
+  h += '<div class="sh"><div class="st">הגשת זמינות לשבוע</div>';
+  h += '<div style="display:flex;gap:8px;align-items:center">';
+  h += '<button class="wn-btn" onclick="changeReqWeek(-1)">&#8249;</button>';
+  h += '<span style="font-size:.85rem;font-weight:700">'+fmt(reqWeekStart)+' - '+fmt(wEnd)+'</span>';
+  h += '<button class="wn-btn" onclick="changeReqWeek(1)">&#8250;</button>';
+  h += '</div></div>';
+
+  if(alreadySubmitted) {
+    h += '<div class="week-sent">v שלחת בקשות לשבוע זה! המנהל יאשר בקרוב.</div>';
+  }
+
+  h += '<div style="background:var(--s);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:18px">';
+  h += '<table class="week-req-table"><thead><tr>';
+  h += '<th>יום</th><th>תאריך</th><th>זמינות</th><th>סטטוס</th>';
+  h += '</tr></thead><tbody>';
+
+  var dayLbls = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  for(var i=0; i<7; i++) {
+    var dateStr = addDays(reqWeekStart, i);
+    var dayIdx  = new Date(dateStr+'T12:00').getDay();
+    var isWeekend = dayIdx===5||dayIdx===6;
+    var existing = null;
+    for(var j=0; j<myReqs.length; j++) {
+      if(myReqs[j].date===dateStr && myReqs[j].status!=='rejected') { existing=myReqs[j]; break; }
+    }
+    var sel2 = weekSelections[dateStr] || null;
+    var statLabel, statColor;
+    if(existing) {
+      if(existing.status==='pending')  { statLabel=' ממתין'; statColor='var(--a)'; }
+      else if(existing.status==='approved') { statLabel='v אושר'; statColor='var(--g)'; }
+      else { statLabel='X נדחה'; statColor='var(--r)'; }
+    } else {
+      statLabel = sel2 ? ' טרם נשלח' : '-';
+      statColor = 'var(--m)';
+    }
+    var dis = existing ? 'disabled' : '';
+    var btns = '';
+    if(isWeekend) {
+      var ysel = sel2==='yes' || (existing&&existing.presetId==='yes');
+      var nsel = sel2==='no'  || (existing&&existing.presetId==='no');
+      btns += '<button class="sbtn'+(ysel?' sel-yes':'')+'" onclick="tdSel(this)" data-d="'+dateStr+'" data-v="yes" '+dis+'>v כן</button>';
+      btns += '<button class="sbtn'+(nsel?' sel-no':'')+'" onclick="tdSel(this)" data-d="'+dateStr+'" data-v="no" '+dis+'>x לא</button>';
+    } else {
+      var ms = sel2==='morning' || (existing&&existing.presetId==='morning');
+      var es = sel2==='evening' || (existing&&existing.presetId==='evening');
+      var fs = sel2==='full'    || (existing&&existing.presetId==='full');
+      var os = sel2==='off'     || (existing&&existing.presetId==='off');
+      btns += '<button class="sbtn'+(ms?' sel-morning':'')+'" onclick="tdSel(this)" data-d="'+dateStr+'" data-v="morning" '+dis+'>בוקר</button>';
+      btns += '<button class="sbtn'+(es?' sel-evening':'')+'" onclick="tdSel(this)" data-d="'+dateStr+'" data-v="evening" '+dis+'>ערב</button>';
+      btns += '<button class="sbtn'+(fs?' sel-full':'')+'" onclick="tdSel(this)" data-d="'+dateStr+'" data-v="full" '+dis+'>כל היום</button>';
+      btns += '<button class="sbtn'+(os?' sel-off':'')+'" onclick="tdSel(this)" data-d="'+dateStr+'" data-v="off" '+dis+'>לא בכלל</button>';
+    }
+    h += '<tr>';
+    h += '<td><div class="day-label'+(isWeekend?' weekend':'')+'">'+dayLbls[dayIdx]+'</div></td>';
+    h += '<td style="font-size:.8rem;color:var(--m)">'+fmt(dateStr)+'</td>';
+    h += '<td><div class="shift-btns">'+btns+'</div></td>';
+    h += '<td><div class="req-status-cell" style="color:'+statColor+'">'+statLabel+'</div></td>';
+    h += '</tr>';
+  }
+  h += '</tbody></table></div>';
+
+  if(!alreadySubmitted) {
+    h += '<button class="submit-week-btn" onclick="submitWeekReqs()">שלח בקשות לשבוע</button>';
+  }
+
+  var older = [];
+  for(var i=0; i<myReqs.length; i++) { if(myReqs[i].date < reqWeekStart) older.push(myReqs[i]); }
+  older.sort(function(a,b) { return b.date.localeCompare(a.date); });
+  older = older.slice(0, 5);
+  if(older.length) {
+    h += '<div class="sh" style="margin-top:22px"><div class="st" style="color:var(--m)">בקשות קודמות</div></div>';
+    h += '<div class="emp-req-grid">';
+    for(var i=0; i<older.length; i++) {
+      var r = older[i];
+      var pLabelMap = {morning:'בוקר',evening:'ערב',full:'כל היום',off:'לא בכלל',yes:'כן',no:'לא'};
+      var pLabel = pLabelMap[r.presetId] || r.presetId;
+      var sc, sl;
+      if(r.status==='pending')  { sc='rs-p'; sl=' ממתין'; }
+      else if(r.status==='approved') { sc='rs-a'; sl='v אושר'; }
+      else { sc='rs-r'; sl='X נדחה'; }
+      h += '<div class="req-card"><div class="req-top">';
+      h += '<div><div class="req-name">'+fmt(r.date)+'</div><div class="req-date">'+dayName(r.date)+'</div></div>';
+      h += '<span class="req-stat '+sc+'">'+sl+'</span></div>';
+      h += '<div class="req-det">'+pLabel+'</div>';
+      if(r.note) h += '<div class="req-det">'+r.note+'</div>';
+      h += '</div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+}
+
+function renderEmpSched() {
+  var el = document.getElementById('page-emp-sched');
+  if(!el || !curUser) return;
+  var bizId    = curUser.bizId;
+  var workerId = curUser.workerId;
+  var wStart   = getWeekStart(today());
+  var wEnd     = addDays(wStart, 6);
+  var names    = dayNames();
+
+  var html = '<div class="sh"><div class="st">סידור השבוע - '+fmt(wStart)+' עד '+fmt(wEnd)+'</div></div>';
+  html += '<div style="background:var(--s);border:1px solid var(--b);border-radius:10px;overflow:hidden">';
+  html += '<div style="padding:11px 16px;background:var(--s2);border-bottom:1px solid var(--b);font-weight:700;font-size:.88rem">סידור עבודה מאושר</div>';
+
+  for(var i=0; i<7; i++) {
+    var dateStr = addDays(wStart, i);
+    var ds = [];
+    for(var j=0; j<shf.length; j++) {
+      if(shf[j].bizId===bizId && shf[j].date===dateStr) ds.push(shf[j]);
+    }
+    if(ds.length) {
+      for(var j=0; j<ds.length; j++) {
+        var s = ds[j];
+        var w = null;
+        for(var k=0; k<wrk.length; k++) { if(wrk[k].id===s.workerId) { w=wrk[k]; break; } }
+        var isMe = s.workerId===workerId;
+        var hh = timeDiff(s.start, s.end);
+        html += '<div style="display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(42,48,64,.4);font-size:.83rem;'+(isMe?'background:rgba(245,158,11,.06)':'')+'">';
+        html += '<div style="width:110px;font-weight:600;color:'+(isMe?'var(--a)':'var(--d)')+';">'+names[new Date(dateStr+'T12:00').getDay()]+' '+fmt(dateStr)+'</div>';
+        html += '<div style="color:var(--d)">'+(w?w.name:'?')+' | '+s.start+'-'+s.end+' ('+hh+'h) '+(isMe?'<strong style="color:var(--a)">- אני</strong>':'')+'</div>';
+        html += '</div>';
+      }
+    } else {
+      html += '<div style="display:flex;align-items:center;padding:10px 16px;border-bottom:1px solid rgba(42,48,64,.4);font-size:.83rem">';
+      html += '<div style="width:110px;color:var(--m)">'+names[new Date(dateStr+'T12:00').getDay()]+' '+fmt(dateStr)+'</div>';
+      html += '<div style="color:var(--m)">אין משמרות</div></div>';
+    }
+  }
+  html += '</div>';
+
+  var mine = [];
+  for(var i=0; i<shf.length; i++) { if(shf[i].workerId===workerId && shf[i].date>=today()) mine.push(shf[i]); }
+  mine.sort(function(a,b) { return a.date.localeCompare(b.date); });
+  mine = mine.slice(0,5);
+  if(mine.length) {
+    html += '<div class="sh" style="margin-top:18px"><div class="st">המשמרות הקרובות שלי</div></div>';
+    for(var i=0; i<mine.length; i++) {
+      var s = mine[i];
+      var hh = timeDiff(s.start, s.end);
+      html += '<div style="background:var(--s);border:1px solid var(--b);border-radius:8px;padding:10px 14px;margin-bottom:7px;display:flex;justify-content:space-between;align-items:center;font-size:.83rem">';
+      html += '<div><strong>'+dayName(s.date)+'</strong>, '+fmt(s.date)+'</div>';
+      html += '<div style="color:var(--a)">'+s.start+'-'+s.end+'</div>';
+      html += '<div style="color:var(--m)">'+hh+' שעות</div>';
+      html += '</div>';
+    }
+  }
+  el.innerHTML = html;
+}
+function exportSchedule() {
+  if(!schedBiz) return;
+  var b = null;
+  for(var i=0; i<biz.length; i++) { if(biz[i].id===schedBiz) { b=biz[i]; break; } }
+  if(!b) return;
+  var weekEnd = addDays(weekStart, 6);
+  var dayOrder  = [0,1,2,3,4,5,6];
+  var dayLbls   = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','מוצש'];
+  var weekShifts = [];
+  for(var i=0; i<shf.length; i++) {
+    if(shf[i].bizId===schedBiz && shf[i].date>=weekStart && shf[i].date<=weekEnd) weekShifts.push(shf[i]);
+  }
+  var dateByDow = {};
+  for(var i=0; i<7; i++) {
+    var d = addDays(weekStart, i);
+    dateByDow[new Date(d+'T12:00').getDay()] = d;
+  }
+
+  function buildSection(isMorn) {
+    var max = 1;
+    for(var i=0; i<7; i++) {
+      var dow = dayOrder[i];
+      if(isMorn && dow===6) continue;
+      if(!isMorn && dow===5) continue;
+      var d = dateByDow[dow]; if(!d) continue;
+      var cnt = 0;
+      for(var j=0; j<weekShifts.length; j++) {
+        if(weekShifts[j].date===d && isMorning(weekShifts[j].start)===isMorn) cnt++;
+      }
+      if(cnt>max) max=cnt;
+    }
+    var out = '';
+    for(var row=0; row<max; row++) {
+      out += '<tr>';
+      for(var i=0; i<7; i++) {
+        var dow = dayOrder[i]; var d = dateByDow[dow];
+        if(isMorn && dow===6)  { out+='<td style="background:#f0f0f0;border:1px solid #ddd;min-width:85px"></td>'; continue; }
+        if(!isMorn && dow===5) { out+='<td style="background:#f0f0f0;border:1px solid #ddd;min-width:85px"></td>'; continue; }
+        var ds = [];
+        if(d) {
+          for(var j=0; j<weekShifts.length; j++) {
+            if(weekShifts[j].date===d && isMorning(weekShifts[j].start)===isMorn) ds.push(weekShifts[j]);
+          }
+          ds.sort(function(a,bb){return a.start.localeCompare(bb.start);});
+        }
+        out += '<td style="padding:4px 5px;border:1px solid #ddd;text-align:center;vertical-align:middle;min-width:85px">';
+        if(row < ds.length) {
+          var s = ds[row]; var ww = null;
+          for(var wi=0; wi<wrk.length; wi++) { if(wrk[wi].id===s.workerId) { ww=wrk[wi]; break; } }
+          var el2 = (s.end==='00:00'||s.end==='')?'סגירה':s.end;
+          var bg2 = isMorn?'#e8f5e9':'#ede9fe';
+          var cl2 = isMorn?'#1a5c36':'#4c1d95';
+          out += '<div style="background:'+bg2+';border-radius:4px;padding:4px 5px">';
+          out += '<div style="font-weight:700;font-size:12px;color:#1a2540">'+(ww?ww.name:'?')+'</div>';
+          out += '<div style="font-size:10px;color:'+cl2+'">'+s.start+'-'+el2+'</div>';
+          out += '</div>';
+        }
+        out += '</td>';
+      }
+      out += '</tr>';
+    }
+    return out;
+  }
+
+  var hdr = '<tr style="background:#1a2540;color:#fff">';
+  for(var i=0; i<7; i++) {
+    var dow = dayOrder[i]; var d = dateByDow[dow];
+    hdr += '<th style="padding:8px 5px;text-align:center;font-size:12px;border:1px solid #334;'+(dow===5||dow===6?'background:#2a3a5a':'')+'">';
+    hdr += dayLbls[i];
+    if(d) hdr += '<br><span style="font-size:10px;font-weight:400;opacity:.8">'+fmt(d).slice(0,5)+'</span>';
+    hdr += '</th>';
+  }
+  hdr += '</tr>';
+
+  var totRow = '';
+
+  var sh = 'padding:5px 8px;font-size:11px;font-weight:700;border:1px solid #ccc;letter-spacing:.5px';
+  var tableHtml = '<table style="width:100%;border-collapse:collapse;direction:rtl">'
+    + '<thead>'+hdr+'</thead><tbody>'
+    + '<tr><td colspan="7" style="'+sh+';background:#e8f5e9;color:#1a5c36">משמרת בוקר</td></tr>'
+    + buildSection(true)
+    + '<tr><td colspan="7" style="'+sh+';background:#ede9fe;color:#4c1d95">משמרת ערב</td></tr>'
+    + buildSection(false)
+    + totRow
+    + '</tbody></table>';
+
+  var titleHtml = '<div style="text-align:center;margin-bottom:14px;direction:rtl">'
+    + '<div style="font-size:20px;font-weight:800;color:#1a2540">'+b.name+'</div>'
+    + '<div style="font-size:11px;color:#555;margin-top:3px">'+fmt(weekStart)+' - '+fmt(weekEnd)+'</div>'
+    + '</div>';
+
+  var overlay = document.getElementById('print-overlay');
+  overlay.innerHTML = '';
+  overlay.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;background:#fff;z-index:9999;overflow-y:auto;direction:rtl';
+
+  var toolbar = document.createElement('div');
+  toolbar.style.cssText = 'position:sticky;top:0;background:#fff;padding:10px 16px;display:flex;gap:10px;border-bottom:2px solid #eee;z-index:10';
+
+  var btnP = document.createElement('button');
+  btnP.textContent = 'הדפס / שמור PDF';
+  btnP.style.cssText = 'background:#1a2540;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-family:Arial;cursor:pointer;font-weight:700';
+  btnP.onclick = function() { window.print(); };
+
+  var btnC = document.createElement('button');
+  btnC.textContent = 'סגור';
+  btnC.style.cssText = 'background:#e53e3e;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-size:14px;font-family:Arial;cursor:pointer';
+  btnC.onclick = function() { overlay.style.display='none'; };
+
+  toolbar.appendChild(btnP);
+  toolbar.appendChild(btnC);
+  overlay.appendChild(toolbar);
+
+  var body = document.createElement('div');
+  body.style.cssText = 'padding:16px;direction:rtl';
+  body.innerHTML = titleHtml + tableHtml;
+  overlay.appendChild(body);
+}
+</script>
+</body>
+</html>
