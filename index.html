@@ -727,6 +727,7 @@ function renderSchedule() {
   h += '<button class="wn-btn" onclick="changeWeek(1)">שבוע הבא &#8250;</button>';
   h += '<button class="btn bg2 bsm" onclick="exportSchedule()">ייצוא PDF</button>';
   h += '<button class="btn bp bsm" onclick="autoSchedule()">&#9889; סידור אוטומטי</button>';
+  h += '<button class="btn br bsm" onclick="clearSchedule()">&#128465; נקה סידור</button>';
   h += '<button class="btn bg2 bsm" onclick="toggleSchedFullscreen()">&#x26F6; מסך מלא</button>';
   h += '</div>';
 
@@ -1606,6 +1607,17 @@ function toggleSchedFullscreen() {
     if(tabs) tabs.style.display = 'none';
     if(main) main.style.cssText = 'padding:0;max-width:100%';
   }
+}
+
+function clearSchedule() {
+  if(!confirm('למחוק את כל המשמרות לשבוע זה?')) return;
+  var weekEnd = addDays(weekStart, 6);
+  shf = shf.filter(function(s) {
+    return !(s.bizId===schedBiz && s.date>=weekStart && s.date<=weekEnd);
+  });
+  save();
+  toast('הסידור נוקה', 'var(--r)');
+  renderSchedule();
 }
 
 function autoSchedule() {
