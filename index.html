@@ -543,14 +543,13 @@ function doLogin() {
     if(code !== '1234') { alert('קוד שגוי'); return; }
     curUser = {type:'owner', name:name};
   } else if(lMode === 'manager') {
-    // Refill biz selector in case Firebase just loaded
-    fillSel('l-biz', biz.map(function(b) { return {v:b.id, l:b.name}; }));
     var bizId = parseInt(document.getElementById('l-biz').value);
     if(!bizId || isNaN(bizId)) { alert('אנא בחר סניף מהרשימה'); return; }
     var bizObj = null;
     for(var i=0; i<biz.length; i++) { if(biz[i].id===bizId) { bizObj=biz[i]; break; } }
     if(!bizObj) { alert('הסניף לא נמצא - נסה שוב'); return; }
-    if(code !== (bizObj.managerCode||'0000')) { alert('קוד סניף שגוי'); return; }
+    if(!bizObj.managerCode) { alert('קוד מנהל לא הוגדר לסניף זה.\nבקש מהבעלים להגדיר קוד בעמוד הסניפים.'); return; }
+    if(code !== bizObj.managerCode) { alert('קוד סניף שגוי'); return; }
     curUser = {type:'manager', name:name, bizId:bizId};
   } else {
     var bizId2 = parseInt(document.getElementById('l-biz').value);
@@ -833,7 +832,8 @@ function renderSchedule() {
   var el = document.getElementById('page-schedule');
   if(!el) return;
   if(!biz.length) { el.innerHTML = '<div class="empty"><div>הוסף סניפים תחילה</div></div>'; return; }
-  if(!schedBiz) schedBiz = biz[0].id;
+  if(curUser && curUser.type==='manager') schedBiz = curUser.bizId;
+  else if(!schedBiz && biz.length) schedBiz = biz[0].id;
 
   var weekEnd = addDays(weekStart, 6);
   var bizWorkers = wrk.filter(function(w) { return w.bizId===schedBiz; });
@@ -1393,11 +1393,17 @@ function delRepH(id){ rep=rep.filter(function(r){return r.id!==id;}); save(); re
 function renderRequests(){
   var el=document.getElementById('page-requests');
   if(!el)return;
-  var pending=reqs.filter(function(r){return r.status==='pending';});
-  var done=reqs.filter(function(r){return r.status!=='pending';});
+  // Filter by biz for manager
+  var allReqs = reqs;
+  if(curUser && curUser.type==='manager') {
+    var bizWrkIds = wrk.filter(function(w){return w.bizId===curUser.bizId;}).map(function(w){return w.id;});
+    allReqs = reqs.filter(function(r){return bizWrkIds.indexOf(r.workerId)!==-1;});
+  }
+  var pending=allReqs.filter(function(r){return r.status==='pending';});
+  var done=allReqs.filter(function(r){return r.status!=='pending';});
   var html='<div class="sh"><div class="st">בקשות עובדים</div></div>';
 
-  if(!reqs.length){
+  if(!allReqs.length){
     html+='<div class="empty"><div class="empty-icon"></div><div>אין בקשות עדיין</div></div>';
   } else {
     if(pending.length){
@@ -2088,15 +2094,14 @@ function saveToFirebase() {
   }).catch(function(e) { console.log('Firebase save error:', e); });
 }
 
-document.addEventListener("DOMContentLoaded", function() {
-  // Show loading while Firebase loads
+document.addEventListener('DOMContentLoaded', function() {
   var loginScreen = document.getElementById('login-screen');
   var loadDiv = document.createElement('div');
   loadDiv.id = 'fb-loading';
   loadDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
   loadDiv.innerHTML = '<div style="font-size:2rem;font-weight:900;color:var(--a)">SHIFTY</div><div style="color:var(--m);font-size:.85rem">טוען נתונים...</div>';
   document.body.appendChild(loadDiv);
-  loginScreen.style.display = 'none';
+  if(loginScreen) loginScreen.style.display = 'none';
 
   initFirebase();
 
@@ -2109,7 +2114,10 @@ document.addEventListener("DOMContentLoaded", function() {
     }
     var ls2 = document.getElementById('login-screen');
     if(ls2 && ls2.style.display === 'none') ls2.style.display = 'flex';
+    var firstTab = document.querySelector('.ltab');
+    if(firstTab) setLMode('owner', firstTab);
   }, 8000);
-});</script>
+});
+;</script>
 </body>
 </html>
