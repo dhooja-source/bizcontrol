@@ -543,10 +543,13 @@ function doLogin() {
     if(code !== '1234') { alert('קוד שגוי'); return; }
     curUser = {type:'owner', name:name};
   } else if(lMode === 'manager') {
+    // Refill biz selector in case Firebase just loaded
+    fillSel('l-biz', biz.map(function(b) { return {v:b.id, l:b.name}; }));
     var bizId = parseInt(document.getElementById('l-biz').value);
+    if(!bizId || isNaN(bizId)) { alert('אנא בחר סניף מהרשימה'); return; }
     var bizObj = null;
     for(var i=0; i<biz.length; i++) { if(biz[i].id===bizId) { bizObj=biz[i]; break; } }
-    if(!bizObj) { alert('בחר סניף'); return; }
+    if(!bizObj) { alert('הסניף לא נמצא - נסה שוב'); return; }
     if(code !== (bizObj.managerCode||'0000')) { alert('קוד סניף שגוי'); return; }
     curUser = {type:'manager', name:name, bizId:bizId};
   } else {
@@ -593,7 +596,7 @@ function buildApp() {
       + '<div class="page" id="page-requests"></div>'
       + '<div class="page" id="page-history"></div>'
       + '<div class="page" id="page-businesses"></div>';
-    renderOverview();
+    if(typeof renderOverview==='function') renderOverview();
   } else if(curUser.type === 'manager') {
     tabs.innerHTML = ''
       + '<div class="tab active" onclick="sp(\'report\',this)">דיווח יומי</div>'
@@ -622,15 +625,22 @@ function sp(name, el) {
   var tabs2 = document.querySelectorAll('.tab');
   for(var i=0; i<pages.length; i++) pages[i].classList.remove('active');
   for(var i=0; i<tabs2.length; i++) tabs2[i].classList.remove('active');
-  document.getElementById('page-'+name).classList.add('active');
+  var pg = document.getElementById('page-'+name);
+  if(!pg) return;
+  pg.classList.add('active');
   if(el) el.classList.add('active');
-  var map = {
-    overview:renderOverview, report:renderReport, schedule:renderSchedule,
-    requests:renderRequests, history:renderHistory, businesses:renderBusinesses,
-    workers:renderWorkers,
-    'emp-req':renderEmpReq, 'emp-sched':renderEmpSched
+  var renderFns = {
+    overview: function(){ if(typeof renderOverview==='function') renderOverview(); },
+    report: function(){ if(typeof renderReport==='function') renderReport(); },
+    schedule: function(){ if(typeof renderSchedule==='function') renderSchedule(); },
+    requests: function(){ if(typeof renderRequests==='function') renderRequests(); },
+    history: function(){ if(typeof renderHistory==='function') renderHistory(); },
+    businesses: function(){ if(typeof renderBusinesses==='function') renderBusinesses(); },
+    workers: function(){ if(typeof renderWorkers==='function') renderWorkers(); },
+    'emp-req': function(){ if(typeof renderEmpReq==='function') renderEmpReq(); },
+    'emp-sched': function(){ if(typeof renderEmpSched==='function') renderEmpSched(); }
   };
-  if(map[name]) map[name]();
+  if(renderFns[name]) renderFns[name]();
 }
 
 // ===
@@ -2049,12 +2059,14 @@ function loadFromFirebase() {
     if(ld) ld.remove();
     var ls = document.getElementById('login-screen');
     if(ls) ls.style.display = 'flex';
+    setLMode('owner', document.querySelector('.ltab'));
   }).catch(function(e) {
     console.log('Firebase load error:', e);
     var ld = document.getElementById('fb-loading');
     if(ld) ld.remove();
     var ls = document.getElementById('login-screen');
     if(ls) ls.style.display = 'flex';
+    setLMode('owner', document.querySelector('.ltab'));
   });
 }
 
