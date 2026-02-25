@@ -742,8 +742,9 @@ function renderSchedule() {
       var w = bizWorkers[i];
       h += '<div class="worker-chip" draggable="true"'
          + ' data-wid="'+w.id+'"'
-         + ' style="background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:7px 10px;margin-bottom:6px;cursor:grab;font-size:.82rem;font-weight:600">'
-         + w.name
+         + ' style="background:var(--card);border:1px solid var(--b);border-radius:8px;padding:8px 11px;margin-bottom:6px;cursor:grab;font-size:.82rem;font-weight:600;user-select:none;-webkit-user-select:none">'
+         + '<div>'+w.name+'</div>'
+         + '<div style="font-size:.63rem;color:var(--m);margin-top:2px">לחץ: בקשות | גרור: סידור</div>'
          + '</div>';
     }
   }
@@ -832,66 +833,31 @@ function renderSchedule() {
   el.innerHTML = h;
 
   // Attach events to worker chips
+  // Click = show requests, Drag = drag to schedule
   var chips = el.querySelectorAll('.worker-chip');
   for(var i=0; i<chips.length; i++) {
     (function(chip) {
-      var pressTimer = null;
-      var isDragging = false;
+      var didDrag = false;
 
-      // Click = show worker requests
-      chip.addEventListener('click', function(e) {
-        if(isDragging) return;
-        var wid = parseInt(chip.getAttribute('data-wid'));
-        showWorkerRequests(wid);
-      });
-
-      // Long press = enable drag
-      chip.addEventListener('mousedown', function(e) {
-        isDragging = false;
-        pressTimer = setTimeout(function() {
-          isDragging = true;
-          chip.style.cursor = 'grabbing';
-          chip.style.boxShadow = '0 0 0 3px var(--a)';
-        }, 500);
-      });
-      chip.addEventListener('mouseup', function() {
-        clearTimeout(pressTimer);
-        chip.style.cursor = 'grab';
-        chip.style.boxShadow = '';
-      });
-      chip.addEventListener('mouseleave', function() {
-        clearTimeout(pressTimer);
-        chip.style.cursor = 'grab';
-        chip.style.boxShadow = '';
-      });
-
-      // Touch long press for mobile
-      chip.addEventListener('touchstart', function(e) {
-        isDragging = false;
-        pressTimer = setTimeout(function() {
-          isDragging = true;
-          chip.style.boxShadow = '0 0 0 3px var(--a)';
-          chip.setAttribute('draggable', 'true');
-        }, 500);
-      }, {passive:true});
-      chip.addEventListener('touchend', function() {
-        clearTimeout(pressTimer);
-        chip.style.boxShadow = '';
-      });
-
-      // Drag events
       chip.addEventListener('dragstart', function(e) {
-        if(!isDragging) { e.preventDefault(); return; }
+        didDrag = true;
         dragWId = parseInt(chip.getAttribute('data-wid'));
         e.dataTransfer.setData('text/plain', String(dragWId));
-        chip.style.opacity = '0.4';
+        chip.style.opacity = '0.5';
+        chip.style.boxShadow = '0 0 0 3px var(--a)';
       });
+
       chip.addEventListener('dragend', function() {
-        isDragging = false;
         chip.style.opacity = '';
-        chip.style.cursor = 'grab';
         chip.style.boxShadow = '';
         dragWId = null;
+        setTimeout(function() { didDrag = false; }, 100);
+      });
+
+      chip.addEventListener('click', function(e) {
+        if(didDrag) return;
+        var wid = parseInt(chip.getAttribute('data-wid'));
+        showWorkerRequests(wid);
       });
     })(chips[i]);
   }
