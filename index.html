@@ -726,6 +726,7 @@ function renderSchedule() {
   h += '<span style="font-weight:700;font-size:.9rem">'+fmt(weekStart)+' -- '+fmt(weekEnd)+'</span>';
   h += '<button class="wn-btn" onclick="changeWeek(1)">שבוע הבא &#8250;</button>';
   h += '<button class="btn bg2 bsm" onclick="exportSchedule()">ייצוא PDF</button>';
+  h += '<button class="btn bp bsm" onclick="autoSchedule()">&#9889; סידור אוטומטי</button>';
   h += '</div>';
 
   // Workers panel (drag source)
@@ -830,20 +831,67 @@ function renderSchedule() {
 
   el.innerHTML = h;
 
-  // Attach drag events to worker chips
+  // Attach events to worker chips
   var chips = el.querySelectorAll('.worker-chip');
   for(var i=0; i<chips.length; i++) {
     (function(chip) {
+      var pressTimer = null;
+      var isDragging = false;
+
+      // Click = show worker requests
+      chip.addEventListener('click', function(e) {
+        if(isDragging) return;
+        var wid = parseInt(chip.getAttribute('data-wid'));
+        showWorkerRequests(wid);
+      });
+
+      // Long press = enable drag
+      chip.addEventListener('mousedown', function(e) {
+        isDragging = false;
+        pressTimer = setTimeout(function() {
+          isDragging = true;
+          chip.style.cursor = 'grabbing';
+          chip.style.boxShadow = '0 0 0 3px var(--a)';
+        }, 500);
+      });
+      chip.addEventListener('mouseup', function() {
+        clearTimeout(pressTimer);
+        chip.style.cursor = 'grab';
+        chip.style.boxShadow = '';
+      });
+      chip.addEventListener('mouseleave', function() {
+        clearTimeout(pressTimer);
+        chip.style.cursor = 'grab';
+        chip.style.boxShadow = '';
+      });
+
+      // Touch long press for mobile
+      chip.addEventListener('touchstart', function(e) {
+        isDragging = false;
+        pressTimer = setTimeout(function() {
+          isDragging = true;
+          chip.style.boxShadow = '0 0 0 3px var(--a)';
+          chip.setAttribute('draggable', 'true');
+        }, 500);
+      }, {passive:true});
+      chip.addEventListener('touchend', function() {
+        clearTimeout(pressTimer);
+        chip.style.boxShadow = '';
+      });
+
+      // Drag events
       chip.addEventListener('dragstart', function(e) {
+        if(!isDragging) { e.preventDefault(); return; }
         dragWId = parseInt(chip.getAttribute('data-wid'));
         e.dataTransfer.setData('text/plain', String(dragWId));
         chip.style.opacity = '0.4';
       });
       chip.addEventListener('dragend', function() {
+        isDragging = false;
         chip.style.opacity = '';
+        chip.style.cursor = 'grab';
+        chip.style.boxShadow = '';
         dragWId = null;
-        dragDate = null;
-        dragShift = null;
       });
     })(chips[i]);
   }
@@ -1492,6 +1540,160 @@ function renderEmpSched() {
   }
   el.innerHTML = html;
 }
+function showWorkerRequests(wid) {
+  var w = null;
+  for(var i=0; i<wrk.length; i++) { if(wrk[i].id===wid) { w=wrk[i]; break; } }
+  if(!w) return;
+
+  // Get this worker's requests for current week
+  var wEnd = addDays(weekStart, 6);
+  var workerReqs = [];
+  for(var i=0; i<reqs.length; i++) {
+    if(reqs[i].workerId===wid && reqs[i].date>=weekStart && reqs[i].date<=wEnd) {
+      workerReqs.push(reqs[i]);
+    }
+  }
+
+  var dayLbls = ['ראשון','שני','שלישי','רביעי','חמישי','שישי','שבת'];
+  var presetMap = {morning:'בוקר (08-16)',evening:'ערב (17-סגירה)',full:'יום מלא',off:'לא זמין',yes:'זמין',no:'לא זמין'};
+  var statusMap = {pending:'ממתין',approved:'אושר',rejected:'נדחה'};
+  var statusColor = {pending:'var(--a)',approved:'var(--g)',rejected:'var(--r)'};
+
+  var h = '<div style="display:flex;flex-direction:column;gap:8px">';
+
+  if(!workerReqs.length) {
+    h += '<div style="text-align:center;padding:20px;color:var(--m);font-size:.85rem">אין בקשות לשבוע זה</div>';
+  } else {
+    workerReqs.sort(function(a,b) { return a.date.localeCompare(b.date); });
+    for(var i=0; i<workerReqs.length; i++) {
+      var r = workerReqs[i];
+      var dow = new Date(r.date+'T12:00').getDay();
+      var preset = presetMap[r.presetId] || r.presetId;
+      var stat = statusMap[r.status] || r.status;
+      var col = statusColor[r.status] || 'var(--m)';
+      h += '<div style="background:var(--s2);border-radius:8px;padding:10px 12px;display:flex;justify-content:space-between;align-items:center">';
+      h += '<div>';
+      h += '<div style="font-weight:700;font-size:.84rem">'+dayLbls[dow]+' - '+fmt(r.date).slice(0,5)+'</div>';
+      h += '<div style="font-size:.76rem;color:var(--m);margin-top:2px">'+preset+'</div>';
+      h += '</div>';
+      h += '<span style="font-size:.72rem;font-weight:700;color:'+col+'">'+stat+'</span>';
+      h += '</div>';
+    }
+  }
+  h += '</div>';
+
+  // Show in modal
+  document.getElementById('preset-title').textContent = w.name + ' - בקשות שבועיות';
+  document.getElementById('preset-row').innerHTML = h;
+  document.getElementById('custom-times').style.display = 'none';
+  // Hide confirm button
+  var mf = document.querySelector('#mo-preset .mf');
+  if(mf) mf.style.display = 'none';
+  om('mo-preset');
+
+  // Restore confirm button when modal closes
+  var closeBtn = document.querySelector('#mo-preset .mc');
+  if(closeBtn) {
+    closeBtn.onclick = function() {
+      cm('mo-preset');
+      if(mf) mf.style.display = '';
+    };
+  }
+}
+
+function autoSchedule() {
+  if(!schedBiz) return;
+  var weekEnd = addDays(weekStart, 6);
+
+  // Get approved requests for this biz and week
+  var weekReqs = [];
+  for(var i=0; i<reqs.length; i++) {
+    var r = reqs[i];
+    if(r.date >= weekStart && r.date <= weekEnd && r.status === 'approved') {
+      // Check worker belongs to this biz
+      for(var j=0; j<wrk.length; j++) {
+        if(wrk[j].id === r.workerId && wrk[j].bizId === schedBiz) {
+          weekReqs.push(r);
+          break;
+        }
+      }
+    }
+  }
+
+  // Also get pending requests
+  var pendingReqs = [];
+  for(var i=0; i<reqs.length; i++) {
+    var r = reqs[i];
+    if(r.date >= weekStart && r.date <= weekEnd && r.status === 'pending') {
+      for(var j=0; j<wrk.length; j++) {
+        if(wrk[j].id === r.workerId && wrk[j].bizId === schedBiz) {
+          pendingReqs.push(r);
+          break;
+        }
+      }
+    }
+  }
+
+  var allReqs = weekReqs.concat(pendingReqs);
+
+  if(!allReqs.length) {
+    toast('אין בקשות לשבוע זה', 'var(--r)');
+    return;
+  }
+
+  // Shift times by preset
+  var presetTimes = {
+    morning: {start:'08:00', end:'16:00'},
+    evening: {start:'17:00', end:'00:00'},
+    full:    {start:'09:00', end:'21:00'},
+    yes:     {start:'08:00', end:'16:00'},
+    off:     null,
+    no:      null
+  };
+
+  var added = 0;
+  for(var i=0; i<allReqs.length; i++) {
+    var r = allReqs[i];
+    if(r.presetId === 'off' || r.presetId === 'no') continue;
+
+    // Check if shift already exists for this worker on this date
+    var exists = false;
+    for(var j=0; j<shf.length; j++) {
+      if(shf[j].workerId === r.workerId && shf[j].date === r.date && shf[j].bizId === schedBiz) {
+        exists = true; break;
+      }
+    }
+    if(exists) continue;
+
+    var times = presetTimes[r.presetId];
+    if(!times) continue;
+
+    shf.push({
+      id:       Date.now() + added,
+      bizId:    schedBiz,
+      workerId: r.workerId,
+      date:     r.date,
+      start:    times.start,
+      end:      times.end,
+      preset:   r.presetId,
+      fromAuto: true
+    });
+
+    // Approve pending request
+    if(r.status === 'pending') r.status = 'approved';
+
+    added++;
+  }
+
+  if(added === 0) {
+    toast('כל הבקשות כבר בסידור!', 'var(--a)');
+  } else {
+    save();
+    toast('נוספו ' + added + ' משמרות אוטומטית!', 'var(--g)');
+    renderSchedule();
+  }
+}
+
 function exportSchedule() {
   if(!schedBiz) return;
   var b = null;
@@ -1666,7 +1868,25 @@ function saveToFirebase() {
   }).catch(function(e) { console.log('Firebase save error:', e); });
 }
 
-document.addEventListener("DOMContentLoaded", function() { initFirebase(); });
+document.addEventListener("DOMContentLoaded", function() {
+  // Show loading while Firebase loads
+  var loginScreen = document.getElementById('login-screen');
+  var loadDiv = document.createElement('div');
+  loadDiv.id = 'fb-loading';
+  loadDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
+  loadDiv.innerHTML = '<div style="font-size:2rem;font-weight:900;color:var(--a)">SHIFTY</div><div style="color:var(--m);font-size:.85rem">טוען נתונים...</div>';
+  document.body.appendChild(loadDiv);
+  loginScreen.style.display = 'none';
+
+  initFirebase();
+
+  // After 3 seconds show login regardless
+  setTimeout(function() {
+    var ld = document.getElementById('fb-loading');
+    if(ld) ld.remove();
+    loginScreen.style.display = 'flex';
+  }, 3000);
+});
 </script>
 </body>
 </html>
