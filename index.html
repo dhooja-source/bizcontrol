@@ -727,6 +727,7 @@ function renderSchedule() {
   h += '<button class="wn-btn" onclick="changeWeek(1)">שבוע הבא &#8250;</button>';
   h += '<button class="btn bg2 bsm" onclick="exportSchedule()">ייצוא PDF</button>';
   h += '<button class="btn bp bsm" onclick="autoSchedule()">&#9889; סידור אוטומטי</button>';
+  h += '<button class="btn bg2 bsm" onclick="toggleSchedFullscreen()">&#x26F6; מסך מלא</button>';
   h += '</div>';
 
   // Workers panel (drag source)
@@ -1548,22 +1549,62 @@ function showWorkerRequests(wid) {
   }
   h += '</div>';
 
-  // Show in modal
-  document.getElementById('preset-title').textContent = w.name + ' - בקשות שבועיות';
-  document.getElementById('preset-row').innerHTML = h;
-  document.getElementById('custom-times').style.display = 'none';
-  // Hide confirm button
-  var mf = document.querySelector('#mo-preset .mf');
-  if(mf) mf.style.display = 'none';
-  om('mo-preset');
+  // Show in a dedicated overlay (not mo-preset, to avoid breaking shift modal)
+  var overlay = document.getElementById('worker-req-overlay');
+  if(!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'worker-req-overlay';
+    overlay.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.5);z-index:700;align-items:center;justify-content:center;padding:16px';
+        var inner = document.createElement('div');
+    inner.style.cssText = 'background:var(--card);border:1px solid var(--b);border-radius:16px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)';
+    var hdr2 = document.createElement('div');
+    hdr2.style.cssText = 'padding:16px 20px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between';
+    var titleEl = document.createElement('span');
+    titleEl.id = 'wreq-title';
+    titleEl.style.cssText = 'font-weight:700;font-size:.95rem';
+    var closeX = document.createElement('button');
+    closeX.textContent = 'x';
+    closeX.style.cssText = 'background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--m);line-height:1';
+    closeX.onclick = function() { overlay.style.display = 'none'; };
+    hdr2.appendChild(titleEl);
+    hdr2.appendChild(closeX);
+    var bodyEl = document.createElement('div');
+    bodyEl.id = 'wreq-body';
+    bodyEl.style.cssText = 'padding:16px';
+    inner.appendChild(hdr2);
+    inner.appendChild(bodyEl);
+    overlay.appendChild(inner);
+    document.body.appendChild(overlay);
+    overlay.addEventListener('click', function(e) {
+      if(e.target === overlay) overlay.style.display = 'none';
+    });
+  }
+  document.getElementById('wreq-title').textContent = w.name + ' - בקשות שבוע';
+  document.getElementById('wreq-body').innerHTML = h;
+  overlay.style.display = 'flex';
+}
 
-  // Restore confirm button when modal closes
-  var closeBtn = document.querySelector('#mo-preset .mc');
-  if(closeBtn) {
-    closeBtn.onclick = function() {
-      cm('mo-preset');
-      if(mf) mf.style.display = '';
-    };
+function toggleSchedFullscreen() {
+  var page = document.getElementById('page-schedule');
+  var nav  = document.querySelector('nav');
+  var tabs = document.querySelector('.tabs');
+  var main = document.querySelector('main');
+  if(!page) return;
+
+  if(page.getAttribute('data-fs') === '1') {
+    // Exit fullscreen
+    page.removeAttribute('data-fs');
+    page.style.cssText = '';
+    if(nav)  nav.style.display = '';
+    if(tabs) tabs.style.display = '';
+    if(main) main.style.cssText = '';
+  } else {
+    // Enter fullscreen
+    page.setAttribute('data-fs', '1');
+    page.style.cssText = 'display:block;position:fixed;top:0;left:0;right:0;bottom:0;z-index:500;background:var(--bg);overflow-y:auto;padding:12px';
+    if(nav)  nav.style.display = 'none';
+    if(tabs) tabs.style.display = 'none';
+    if(main) main.style.cssText = 'padding:0;max-width:100%';
   }
 }
 
