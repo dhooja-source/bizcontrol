@@ -247,7 +247,8 @@ td:first-child{color:var(--t);font-weight:500;}
     </div>
     <div class="lsub">מערכת ניהול עסקים ועובדים</div>
     <div class="ltabs">
-      <button class="ltab active" onclick="setLMode('manager',this)">מנהל / בעלים</button>
+      <button class="ltab active" onclick="setLMode('owner',this)">בעלים</button>
+      <button class="ltab" onclick="setLMode('manager',this)">מנהל סניף</button>
       <button class="ltab" onclick="setLMode('employee',this)">עובד</button>
     </div>
     <div class="lform">
@@ -295,6 +296,7 @@ td:first-child{color:var(--t);font-weight:500;}
       <div class="lfield"><label class="fl">שם הסניף</label><input class="fc" id="biz-nm" placeholder="סניף תל אביב"></div>
       <div class="lfield"><label class="fl">שם המנהל</label><input class="fc" id="biz-mg" placeholder="יוסי כהן"></div>
       <div class="lfield"><label class="fl">תפקיד</label><input class="fc" id="biz-rl" placeholder="מנהל"></div>
+      <div class="lfield"><label class="fl">קוד סניף למנהל</label><input class="fc" id="biz-code" placeholder="1234" maxlength="4"></div>
     </div>
     <div class="mf"><button class="btn bg2" onclick="cm('mo-biz')">ביטול</button><button class="btn bp" onclick="addBiz()">הוסף</button></div>
   </div>
@@ -514,13 +516,22 @@ function setLMode(mode, el) {
   for(var i=0; i<tabs.length; i++) tabs[i].classList.remove('active');
   if(el) el.classList.add('active');
   var wrap = document.getElementById('l-biz-wrap');
+  var nf = document.getElementById('l-name');
+  var cf = document.getElementById('l-code');
   if(mode === 'employee') {
     wrap.style.display = 'block';
     fillSel('l-biz', biz.map(function(b) { return {v:b.id, l:b.name}; }));
-    document.getElementById('l-code').placeholder = 'שם פרטי שלך בעברית';
+    if(nf) nf.placeholder = 'שם פרטי בעברית';
+    if(cf) cf.placeholder = 'לא נדרש';
+  } else if(mode === 'manager') {
+    wrap.style.display = 'block';
+    fillSel('l-biz', biz.map(function(b) { return {v:b.id, l:b.name}; }));
+    if(nf) nf.placeholder = 'שם מנהל';
+    if(cf) cf.placeholder = 'קוד סניף';
   } else {
     wrap.style.display = 'none';
-    document.getElementById('l-code').placeholder = 'קוד גישה (1234)';
+    if(nf) nf.placeholder = 'שמך';
+    if(cf) cf.placeholder = 'קוד בעלים (1234)';
   }
 }
 
@@ -528,17 +539,24 @@ function doLogin() {
   var name = document.getElementById('l-name').value.trim();
   var code = document.getElementById('l-code').value.trim();
   if(!name) { alert('יש להזין שם'); return; }
-  if(lMode === 'manager') {
+  if(lMode === 'owner') {
     if(code !== '1234') { alert('קוד שגוי'); return; }
-    curUser = {type:'manager', name:name};
-  } else {
+    curUser = {type:'owner', name:name};
+  } else if(lMode === 'manager') {
     var bizId = parseInt(document.getElementById('l-biz').value);
+    var bizObj = null;
+    for(var i=0; i<biz.length; i++) { if(biz[i].id===bizId) { bizObj=biz[i]; break; } }
+    if(!bizObj) { alert('בחר סניף'); return; }
+    if(code !== (bizObj.managerCode||'0000')) { alert('קוד סניף שגוי'); return; }
+    curUser = {type:'manager', name:name, bizId:bizId};
+  } else {
+    var bizId2 = parseInt(document.getElementById('l-biz').value);
     var worker = null;
     for(var i=0; i<wrk.length; i++) {
-      if(wrk[i].bizId===bizId && wrk[i].name.split(' ')[0]===code) { worker=wrk[i]; break; }
+      if(wrk[i].bizId===bizId2 && wrk[i].name.split(' ')[0]===name) { worker=wrk[i]; break; }
     }
     if(!worker) { alert('עובד לא נמצא'); return; }
-    curUser = {type:'employee', name:worker.name, workerId:worker.id, bizId:bizId};
+    curUser = {type:'employee', name:worker.name, workerId:worker.id, bizId:bizId2};
   }
   document.getElementById('login-screen').style.display = 'none';
   document.getElementById('app').style.display = 'block';
@@ -560,7 +578,7 @@ function doLogout() {
 function buildApp() {
   var tabs = document.getElementById('app-tabs');
   var main = document.getElementById('app-main');
-  if(curUser.type === 'manager') {
+  if(curUser.type === 'owner') {
     tabs.innerHTML = ''
       + '<div class="tab active" onclick="sp(\'overview\',this)">לוח בקרה</div>'
       + '<div class="tab" onclick="sp(\'report\',this)">דיווח יומי</div>'
@@ -576,6 +594,18 @@ function buildApp() {
       + '<div class="page" id="page-history"></div>'
       + '<div class="page" id="page-businesses"></div>';
     renderOverview();
+  } else if(curUser.type === 'manager') {
+    tabs.innerHTML = ''
+      + '<div class="tab active" onclick="sp(\'report\',this)">דיווח יומי</div>'
+      + '<div class="tab" onclick="sp(\'schedule\',this)">סידור עבודה</div>'
+      + '<div class="tab" onclick="sp(\'requests\',this)">בקשות עובדים</div>'
+      + '<div class="tab" onclick="sp(\'workers\',this)">עובדים</div>';
+    main.innerHTML = ''
+      + '<div class="page active" id="page-report"></div>'
+      + '<div class="page" id="page-schedule"></div>'
+      + '<div class="page" id="page-requests"></div>'
+      + '<div class="page" id="page-workers"></div>';
+    renderReport();
   } else {
     tabs.innerHTML = ''
       + '<div class="tab active" onclick="sp(\'emp-req\',this)">הגשת בקשות</div>'
@@ -597,6 +627,7 @@ function sp(name, el) {
   var map = {
     overview:renderOverview, report:renderReport, schedule:renderSchedule,
     requests:renderRequests, history:renderHistory, businesses:renderBusinesses,
+    workers:renderWorkers,
     'emp-req':renderEmpReq, 'emp-sched':renderEmpSched
   };
   if(map[name]) map[name]();
@@ -616,6 +647,96 @@ function addBiz() {
   document.getElementById('biz-mg').value = '';
   toast('הסניף נוסף!'); renderBusinesses();
 }
+function renderWorkers() {
+  var el = document.getElementById('page-workers');
+  if(!el) return;
+  var bizId = curUser.bizId;
+  var bizObj = null;
+  for(var i=0; i<biz.length; i++) { if(biz[i].id===bizId) { bizObj=biz[i]; break; } }
+  if(!bizObj) { el.innerHTML = '<div class="empty"><div>סניף לא נמצא</div></div>'; return; }
+
+  var bizWrk = wrk.filter(function(w) { return w.bizId===bizId; });
+  var h = '<div class="sh"><div class="st">עובדים - '+bizObj.name+'</div>'
+        + '<button class="btn bp" onclick="openAddWorker('+bizId+')">+ עובד</button></div>';
+
+  if(!bizWrk.length) {
+    h += '<div class="empty"><div>אין עובדים עדיין</div></div>';
+  } else {
+    h += '<div class="wg">';
+    for(var i=0; i<bizWrk.length; i++) {
+      var w = bizWrk[i];
+      h += '<div class="wc">'
+         + '<div class="wa">'+initials(w.name)+'</div>'
+         + '<div class="wn">'+w.name+'</div>'
+         + '<div class="wr">'+w.role+'</div>'
+         + '<div class="wf">'
+         + '<button class="btn bv bsm" onclick="editWorker('+w.id+')">ערוך</button>'
+         + '<button class="btn br bsm" onclick="delWorker('+w.id+')">מחק</button>'
+         + '</div></div>';
+    }
+    h += '</div>';
+  }
+  el.innerHTML = h;
+}
+
+function editBizCode(bizId) {
+  var b = null;
+  for(var i=0; i<biz.length; i++) { if(biz[i].id===bizId) { b=biz[i]; break; } }
+  if(!b) return;
+
+  // Use inline edit overlay
+  var overlay = document.getElementById('code-edit-overlay');
+  if(!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'code-edit-overlay';
+    overlay.style.cssText = 'display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(15,23,42,.5);z-index:800;align-items:center;justify-content:center;padding:20px';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:var(--card);border-radius:14px;padding:24px;width:100%;max-width:340px;box-shadow:0 20px 60px rgba(0,0,0,.2)';
+    var titleDiv = document.createElement('div');
+    titleDiv.id = 'code-edit-title';
+    titleDiv.style.cssText = 'font-weight:700;font-size:1rem;margin-bottom:16px';
+    var lbl = document.createElement('label');
+    lbl.textContent = 'קוד חדש למנהל';
+    lbl.style.cssText = 'font-size:.75rem;font-weight:600;color:var(--m);display:block;margin-bottom:6px';
+    var inp2 = document.createElement('input');
+    inp2.id = 'code-edit-input';
+    inp2.className = 'fc';
+    inp2.style.cssText = 'width:100%;margin-bottom:14px';
+    inp2.maxLength = 10;
+    inp2.placeholder = 'הכנס קוד';
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:8px;justify-content:flex-end';
+    var cancelBtn = document.createElement('button');
+    cancelBtn.className = 'btn bg2';
+    cancelBtn.textContent = 'ביטול';
+    cancelBtn.onclick = function() { overlay.style.display = 'none'; };
+    var saveBtn2 = document.createElement('button');
+    saveBtn2.id = 'code-edit-save';
+    saveBtn2.className = 'btn bp';
+    saveBtn2.textContent = 'שמור';
+    btnRow.appendChild(cancelBtn);
+    btnRow.appendChild(saveBtn2);
+    box.appendChild(titleDiv);
+    box.appendChild(lbl);
+    box.appendChild(inp2);
+    box.appendChild(btnRow);
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+extContent = 'קוד מנהל - ' + b.name;
+  var inp = document.getElementById('code-edit-input');
+  inp.value = b.managerCode || '0000';
+  document.getElementById('code-edit-save').onclick = function() {
+    var v = inp.value.trim();
+    if(!v) { toast('קוד לא יכול להיות ריק', 'var(--r)'); return; }
+    b.managerCode = v;
+    save();
+    toast('קוד עודכן: ' + v);
+    overlay.style.display = 'none';
+    renderBusinesses();
+  };
+  overlay.style.display = 'flex';
+}
+
 function delBiz(id) {
   if(!confirm('למחוק סניף? כל הנתונים יימחקו.')) return;
   biz  = biz.filter(function(b) { return b.id!==id; });
@@ -677,6 +798,7 @@ function renderBusinesses() {
       h += '</div>';
       h += '<div class="bc-f">';
       h += '<button class="btn bv bsm" onclick="openAddWorker('+b.id+')">+ עובד</button>';
+      h += '<button class="btn bg2 bsm" onclick="editBizCode('+b.id+')">&#128274; קוד מנהל: '+(b.managerCode||'0000')+'</button>';
       h += '<button class="btn br bsm" onclick="delBiz('+b.id+')">מחק סניף</button>';
       h += '</div></div>';
     }
@@ -1140,8 +1262,9 @@ function renderRepCards() {
   var date = datePicker ? datePicker.value : today();
   var h = '<div class="sh"><div class="st">דיווח יומי - קופה - ' + fmt(date) + '</div></div>';
   h += '<div class="rcg">';
-  for(var i=0; i<biz.length; i++) {
-    var b = biz[i];
+  var bizList = (curUser && curUser.type==='manager') ? biz.filter(function(b2){return b2.id===curUser.bizId;}) : biz;
+  for(var i=0; i<bizList.length; i++) {
+    var b = bizList[i];
     var existing = null;
     for(var j=0; j<rep.length; j++) { if(rep[j].bizId===b.id && rep[j].date===date) { existing=rep[j]; break; } }
     var autoH = schedH(b.id, date); // hours from schedule on selected date
@@ -1971,7 +2094,8 @@ document.addEventListener("DOMContentLoaded", function() {
     var ls2 = document.getElementById('login-screen');
     if(ls2 && ls2.style.display === 'none') ls2.style.display = 'flex';
   }, 8000);
-})
+});
+}
 </script>
 </body>
 </html>
