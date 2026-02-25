@@ -1136,14 +1136,15 @@ function renderRepCards() {
   var el = document.getElementById('page-report');
   if(!el) return;
   if(!biz.length) { el.innerHTML = '<div class="empty"><div>הוסף סניפים תחילה</div></div>'; return; }
-  var date = today();
-  var h = '<div class="sh"><div class="st">דיווח יומי - קופה</div></div>';
+  var datePicker = document.getElementById('rep-date');
+  var date = datePicker ? datePicker.value : today();
+  var h = '<div class="sh"><div class="st">דיווח יומי - קופה - ' + fmt(date) + '</div></div>';
   h += '<div class="rcg">';
   for(var i=0; i<biz.length; i++) {
     var b = biz[i];
     var existing = null;
     for(var j=0; j<rep.length; j++) { if(rep[j].bizId===b.id && rep[j].date===date) { existing=rep[j]; break; } }
-    var autoH = schedH(b.id, date);
+    var autoH = schedH(b.id, date); // hours from schedule on selected date
     var hasSched = autoH > 0;
     h += '<div class="rc">';
     h += '<div class="rc-t"><div class="dot"></div>'+b.name+'</div>';
@@ -1193,7 +1194,9 @@ function doSubmitRep(bizId) {
   var hours = parseFloat(hrsEl  ? hrsEl.value  : '') || 0;
   var reporter = rpEl ? rpEl.value.trim() : '';
   if(cash===0 && hours===0) { alert('יש להזין לפחות ערך אחד'); return; }
-  rep.push({id:Date.now(), bizId:bizId, date:today(), cash:cash, hours:hours, reporter:reporter});
+  var repDate = document.getElementById('rep-date');
+  var selDate = repDate ? repDate.value : today();
+  rep.push({id:Date.now(), bizId:bizId, date:selDate, cash:cash, hours:hours, reporter:reporter});
   save(); toast('הדיווח נשמר!'); renderRepCards();
 }
 
