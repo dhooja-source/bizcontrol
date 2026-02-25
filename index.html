@@ -327,8 +327,18 @@ td:first-child{color:var(--t);font-weight:500;}
               <option value="close">סגירה</option>
               <option value="need">עד הצורך</option>
             </select>
-            <input
+            <input class="fc" id="sh-end" type="time">
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
+<div class="print-overlay" id="print-overlay"></div>
+
+<script>
 // ===
 // STORAGE
 // ===
@@ -502,7 +512,7 @@ function setLMode(mode, el) {
   lMode = mode;
   var tabs = document.querySelectorAll('.ltab');
   for(var i=0; i<tabs.length; i++) tabs[i].classList.remove('active');
-  el.classList.add('active');
+  if(el) el.classList.add('active');
   var wrap = document.getElementById('l-biz-wrap');
   if(mode === 'employee') {
     wrap.style.display = 'block';
@@ -1826,17 +1836,31 @@ function exportSchedule() {
   btnP.textContent = 'הדפס / שמור PDF';
   btnP.style.cssText = 'background:#1a2540;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-family:Arial;cursor:pointer;font-weight:700';
   btnP.onclick = function() {
-    var printWin = window.open('', '_blank');
-    if(printWin) {
-      printWin.document.write('<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;direction:rtl;padding:16px}@media print{.no-print{display:none}}</style></head><body>');
-      printWin.document.write('<div class="no-print" style="margin-bottom:12px"><button onclick="window.print()" style="padding:10px 20px;background:#1a2540;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer">הדפס</button></div>');
-      printWin.document.write(document.getElementById('print-overlay').querySelector('div:last-child').innerHTML);
-      printWin.document.write('</body></html>');
-      printWin.document.close();
-      setTimeout(function(){ printWin.print(); }, 500);
-    } else {
-      window.print();
-    }
+    // Build printable content
+    var printContent = document.getElementById('print-overlay');
+    var tableHTML = '';
+    var tables = printContent.querySelectorAll('table');
+    for(var i=0; i<tables.length; i++) tableHTML += tables[i].outerHTML;
+    var titleEl = printContent.querySelector('h2,h3,div[style*="font-size:1"]');
+    var titleHTML = titleEl ? titleEl.outerHTML : '';
+
+    var html = '<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8">'
+      + '<style>body{font-family:Arial,sans-serif;direction:rtl;padding:16px}'
+      + 'table{width:100%;border-collapse:collapse;font-size:12px}'
+      + 'th,td{border:1px solid #ccc;padding:6px 8px;text-align:right}'
+      + 'th{background:#f0f0f0;font-weight:700}'
+      + '.no-print{display:none}'
+      + '@media print{.no-print{display:none!important}}'
+      + '</style></head><body>'
+      + '<div class="no-print" style="margin:12px 0">'
+      + '<button onclick="window.print()" style="background:#1a2540;color:#fff;border:none;border-radius:6px;padding:10px 20px;font-size:14px;cursor:pointer">הדפס</button>'
+      + '</div>'
+      + titleHTML + tableHTML
+      + '</body></html>';
+
+    var blob = new Blob([html], {type:'text/html'});
+    var url = URL.createObjectURL(blob);
+    window.location.href = url;
   };
 
   var btnC = document.createElement('button');
@@ -1884,16 +1908,28 @@ function loadFromFirebase() {
   db.collection('shifty').doc('data').get().then(function(doc) {
     if(doc.exists) {
       var data = doc.data();
-      if(data.biz && data.biz.length)  { biz  = data.biz;  lsSet('sh5_biz', JSON.stringify(biz)); }
-      if(data.wrk && data.wrk.length)  { wrk  = data.wrk;  lsSet('sh5_wrk', JSON.stringify(wrk)); }
-      if(data.shf && data.shf.length)  { shf  = data.shf;  lsSet('sh5_shf', JSON.stringify(shf)); }
-      if(data.rep && data.rep.length)  { rep  = data.rep;  lsSet('sh5_rep', JSON.stringify(rep)); }
-      if(data.reqs && data.reqs.length){ reqs = data.reqs; lsSet('sh5_req', JSON.stringify(reqs)); }
+      // Firebase is source of truth - always override local
+      if(data.biz)  { biz  = data.biz;  lsSet('sh5_biz', JSON.stringify(biz)); }
+      if(data.wrk)  { wrk  = data.wrk;  lsSet('sh5_wrk', JSON.stringify(wrk)); }
+      if(data.shf)  { shf  = data.shf;  lsSet('sh5_shf', JSON.stringify(shf)); }
+      if(data.rep)  { rep  = data.rep;  lsSet('sh5_rep', JSON.stringify(rep)); }
+      if(data.reqs) { reqs = data.reqs; lsSet('sh5_req', JSON.stringify(reqs)); }
+      console.log('Firebase loaded: workers='+wrk.length+' biz='+biz.length);
       var lb = document.getElementById('l-biz');
       if(lb) fillSel('l-biz', biz.map(function(b){ return {v:b.id, l:b.name}; }));
-      console.log('Firebase: data loaded');
     }
-  }).catch(function(e) { console.log('Firebase load error:', e); });
+    // Always show login after Firebase responds
+    var ld = document.getElementById('fb-loading');
+    if(ld) ld.remove();
+    var ls = document.getElementById('login-screen');
+    if(ls) ls.style.display = 'flex';
+  }).catch(function(e) {
+    console.log('Firebase load error:', e);
+    var ld = document.getElementById('fb-loading');
+    if(ld) ld.remove();
+    var ls = document.getElementById('login-screen');
+    if(ls) ls.style.display = 'flex';
+  });
 }
 
 function saveToFirebase() {
@@ -1922,26 +1958,17 @@ document.addEventListener("DOMContentLoaded", function() {
 
   initFirebase();
 
-  // After 3 seconds show login regardless
+  // After 8 seconds show login (Firebase timeout fallback)
   setTimeout(function() {
-    var ld = document.getElementById('fb-loading');
-    if(ld) ld.remove();
-    loginScreen.style.display = 'flex';
-  }, 3000);
-});
-e:.85rem">טוען נתונים...</div>';
-  document.body.appendChild(loadDiv);
-  loginScreen.style.display = 'none';
-
-  initFirebase();
-
-  // After 3 seconds show login regardless
-  setTimeout(function() {
-    var ld = document.getElementById('fb-loading');
-    if(ld) ld.remove();
-    loginScreen.style.display = 'flex';
-  }, 3000);
-});
+    var ld2 = document.getElementById('fb-loading');
+    if(ld2) {
+      ld2.remove();
+      toast('בעיה בחיבור לענן', 'var(--r)');
+    }
+    var ls2 = document.getElementById('login-screen');
+    if(ls2 && ls2.style.display === 'none') ls2.style.display = 'flex';
+  }, 8000);
+})
 </script>
 </body>
 </html>
