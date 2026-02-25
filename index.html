@@ -508,7 +508,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // LOGIN
 // ===
 var curUser = null;
-var lMode = 'manager';
+var lMode = 'owner';
 
 function setLMode(mode, el) {
   lMode = mode;
@@ -596,7 +596,7 @@ function buildApp() {
       + '<div class="page" id="page-requests"></div>'
       + '<div class="page" id="page-history"></div>'
       + '<div class="page" id="page-businesses"></div>';
-    if(typeof renderOverview==='function') renderOverview();
+    renderOverview();
   } else if(curUser.type === 'manager') {
     tabs.innerHTML = ''
       + '<div class="tab active" onclick="sp(\'report\',this)">דיווח יומי</div>'
@@ -731,8 +731,10 @@ function editBizCode(bizId) {
     box.appendChild(inp2);
     box.appendChild(btnRow);
     overlay.appendChild(box);
+    overlay.addEventListener('click', function(e) { if(e.target===overlay) overlay.style.display='none'; });
     document.body.appendChild(overlay);
-extContent = 'קוד מנהל - ' + b.name;
+  }
+  document.getElementById('code-edit-title').textContent = 'קוד מנהל - ' + b.name;
   var inp = document.getElementById('code-edit-input');
   inp.value = b.managerCode || '0000';
   document.getElementById('code-edit-save').onclick = function() {
@@ -2059,14 +2061,16 @@ function loadFromFirebase() {
     if(ld) ld.remove();
     var ls = document.getElementById('login-screen');
     if(ls) ls.style.display = 'flex';
-    setLMode('owner', document.querySelector('.ltab'));
+    var firstTab = document.querySelector('.ltab'); if(firstTab) setLMode('owner', firstTab);
+    // If user already logged in (e.g. came back to tab), re-render
+    if(curUser) buildApp();
   }).catch(function(e) {
     console.log('Firebase load error:', e);
     var ld = document.getElementById('fb-loading');
     if(ld) ld.remove();
     var ls = document.getElementById('login-screen');
     if(ls) ls.style.display = 'flex';
-    setLMode('owner', document.querySelector('.ltab'));
+    var firstTab = document.querySelector('.ltab'); if(firstTab) setLMode('owner', firstTab);
   });
 }
 
@@ -2106,8 +2110,6 @@ document.addEventListener("DOMContentLoaded", function() {
     var ls2 = document.getElementById('login-screen');
     if(ls2 && ls2.style.display === 'none') ls2.style.display = 'flex';
   }, 8000);
-});
-}
-</script>
+});</script>
 </body>
 </html>
