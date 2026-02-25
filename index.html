@@ -320,17 +320,14 @@ td:first-child{color:var(--t);font-weight:500;}
       <div id="custom-times" style="display:none">
         <div class="frow">
           <div><label class="fl">התחלה</label><input class="fc" id="sh-start" type="time"></div>
-          <div><label class="fl">סיום</label><input class="fc" id="sh-end" type="time"></div>
-        </div>
-      </div>
-    </div>
-    <div class="mf"><button class="btn bg2" onclick="cm('mo-preset')">ביטול</button><button class="btn bp" onclick="confirmShift()">הוסף משמרת</button></div>
-  </div>
-</div>
-
-<div class="print-overlay" id="print-overlay"></div>
-
-<script>
+          <div>
+            <label class="fl">סיום</label>
+            <select class="fc" id="sh-end-type" onchange="handleEndType(this.value)" style="margin-bottom:6px">
+              <option value="time">שעה מדויקת</option>
+              <option value="close">סגירה</option>
+              <option value="need">עד הצורך</option>
+            </select>
+            <input
 
 // ===
 // STORAGE
@@ -940,8 +937,8 @@ function buildCell(date, shift, row, cellShifts, bizWorkers) {
     var wname = '';
     for(var i=0; i<bizWorkers.length; i++) { if(bizWorkers[i].id===s.workerId) { wname=bizWorkers[i].name; break; } }
     var col = shift==='morning' ? 'var(--g)' : 'var(--v)';
-    var isSgira = s.end==='00:00'||s.end===''||s.end==='סגירה';
-    var timeLabel = s.start+'-'+(isSgira?'סגירה':s.end);
+    var endDisp = s.end==='00:00'||s.end===''||s.end==='סגירה' ? 'סגירה' : s.end==='23:59' ? 'עד הצורך' : s.end;
+    var timeLabel = s.start+'-'+endDisp;
     h += '<div style="display:flex;align-items:center;justify-content:space-between;background:'+bg+';border:1px solid '+col+'33;border-radius:6px;padding:4px 7px">';
     h += '<div>';
     h += '<div style="font-weight:700;font-size:.82rem;color:var(--t)">'+wname+'</div>';
@@ -986,12 +983,12 @@ function dropWorker(wid, date, shift) {
         {id:'mc', name:'מותאם',       start:'',      end:''}
       ]
     : [
-        {id:'e1', name:'15:00-סגירה', start:'15:00', end:'00:00'},
-        {id:'e2', name:'16:00-סגירה', start:'16:00', end:'00:00'},
-        {id:'e3', name:'17:00-סגירה', start:'17:00', end:'00:00'},
-        {id:'e4', name:'15:00-עד הצוהר', start:'15:00', end:'20:00'},
-        {id:'e5', name:'17:00-עד הצוהר', start:'17:00', end:'20:00'},
-        {id:'ec', name:'מותאם',       start:'',      end:''}
+        {id:'e1', name:'15:00-סגירה',    start:'15:00', end:'00:00'},
+        {id:'e2', name:'16:00-סגירה',    start:'16:00', end:'00:00'},
+        {id:'e3', name:'17:00-סגירה',    start:'17:00', end:'00:00'},
+        {id:'e4', name:'15:00-עד הצורך', start:'15:00', end:'23:59'},
+        {id:'e5', name:'17:00-עד הצורך', start:'17:00', end:'23:59'},
+        {id:'ec', name:'מותאם',          start:'',      end:''}
       ];
 
   var selectedPresetId = opts[0].id;
@@ -1022,6 +1019,20 @@ function pickDynPreset(id, start, end, el) {
     document.getElementById('custom-times').style.display = 'none';
     document.getElementById('sh-start').value = start;
     document.getElementById('sh-end').value   = end;
+  }
+}
+
+function handleEndType(val) {
+  var endInput = document.getElementById('sh-end');
+  if(val === 'close') {
+    endInput.value = '00:00';
+    endInput.style.display = 'none';
+  } else if(val === 'need') {
+    endInput.value = '23:59';
+    endInput.style.display = 'none';
+  } else {
+    endInput.value = '';
+    endInput.style.display = 'block';
   }
 }
 
@@ -1814,7 +1825,19 @@ function exportSchedule() {
   var btnP = document.createElement('button');
   btnP.textContent = 'הדפס / שמור PDF';
   btnP.style.cssText = 'background:#1a2540;color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-family:Arial;cursor:pointer;font-weight:700';
-  btnP.onclick = function() { window.print(); };
+  btnP.onclick = function() {
+    var printWin = window.open('', '_blank');
+    if(printWin) {
+      printWin.document.write('<!DOCTYPE html><html dir="rtl"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;direction:rtl;padding:16px}@media print{.no-print{display:none}}</style></head><body>');
+      printWin.document.write('<div class="no-print" style="margin-bottom:12px"><button onclick="window.print()" style="padding:10px 20px;background:#1a2540;color:#fff;border:none;border-radius:6px;font-size:14px;cursor:pointer">הדפס</button></div>');
+      printWin.document.write(document.getElementById('print-overlay').querySelector('div:last-child').innerHTML);
+      printWin.document.write('</body></html>');
+      printWin.document.close();
+      setTimeout(function(){ printWin.print(); }, 500);
+    } else {
+      window.print();
+    }
+  };
 
   var btnC = document.createElement('button');
   btnC.textContent = 'סגור';
@@ -1894,6 +1917,19 @@ document.addEventListener("DOMContentLoaded", function() {
   loadDiv.id = 'fb-loading';
   loadDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
   loadDiv.innerHTML = '<div style="font-size:2rem;font-weight:900;color:var(--a)">SHIFTY</div><div style="color:var(--m);font-size:.85rem">טוען נתונים...</div>';
+  document.body.appendChild(loadDiv);
+  loginScreen.style.display = 'none';
+
+  initFirebase();
+
+  // After 3 seconds show login regardless
+  setTimeout(function() {
+    var ld = document.getElementById('fb-loading');
+    if(ld) ld.remove();
+    loginScreen.style.display = 'flex';
+  }, 3000);
+});
+e:.85rem">טוען נתונים...</div>';
   document.body.appendChild(loadDiv);
   loginScreen.style.display = 'none';
 
