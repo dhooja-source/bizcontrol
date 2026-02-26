@@ -315,9 +315,9 @@ td:first-child{color:var(--t);font-weight:500;}
 </div>
 
 <div class="mo" id="mo-preset">
-  <div class="md">
+  <div class="md" style="display:flex;flex-direction:column;max-height:90vh">
     <div class="mh"><span class="mt" id="preset-title">בחר משמרת</span><button class="mc" onclick="cm('mo-preset')">&#x2715;</button></div>
-    <div class="mb">
+    <div class="mb" style="flex:1;overflow-y:auto">
       <div class="preset-grid" id="preset-row"></div>
       <div id="custom-times" style="display:none">
         <div class="frow">
@@ -335,9 +335,9 @@ td:first-child{color:var(--t);font-weight:500;}
         </div>
       </div>
     </div>
-    <div class="mf">
+    <div class="mf" style="flex-shrink:0;padding:12px 16px;border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end;background:var(--card)">
       <button class="btn bg2" onclick="cm('mo-preset')">ביטול</button>
-      <button class="btn bp" onclick="confirmShift()">✓ אשר משמרת</button>
+      <button class="btn bp" style="min-width:130px;font-size:1rem;padding:12px 20px" onclick="confirmShift()">✓ אשר משמרת</button>
     </div>
   </div>
 </div>
