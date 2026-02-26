@@ -1270,13 +1270,14 @@ function renderOverview(){
   var pendingReqs=reqs.filter(function(r){return r.status==='pending';}).length;
 
   // Biz filter buttons
-  var filterH = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;align-items:center">';
-  filterH += '<span style="font-size:.75rem;color:var(--m);font-weight:600">סניף:</span>';
-  filterH += '<button class="bsb'+(ovBizFilter===null?' active':'')+'" onclick="setOvBiz(null)">כולם</button>';
+  var filterH = '<div style="margin-bottom:14px">';
+  filterH += '<div style="font-size:.75rem;color:var(--m);font-weight:600;margin-bottom:6px">הצג נתונים עבור:</div>';
+  filterH += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+  filterH += '<button class="bsb'+(ovBizFilter===null?' active':'')+'" onclick="setOvBiz(null)" style="font-size:.78rem;padding:6px 12px">כולם</button>';
   for(var i=0;i<biz.length;i++){
-    filterH += '<button class="bsb'+(ovBizFilter===biz[i].id?' active':'')+'" onclick="setOvBiz('+biz[i].id+')">'+biz[i].name+'</button>';
+    filterH += '<button class="bsb'+(ovBizFilter===biz[i].id?' active':'')+'" onclick="setOvBiz('+biz[i].id+')" style="font-size:.78rem;padding:6px 12px">'+biz[i].name+'</button>';
   }
-  filterH += '</div>';
+  filterH += '</div></div>';
 
   // Filter rep data
   var filtRep = ovBizFilter ? rep.filter(function(r){return r.bizId===ovBizFilter;}) : rep;
@@ -1352,7 +1353,9 @@ function renderOvTable(){
 function renderReport(){
   var el=document.getElementById('page-report');
   if(!el)return;
-  el.innerHTML='<div class="sh"><div class="st">דיווח יומי - קופה בלבד</div></div>\n    <div class="dbar"><label>תאריך:</label><input type="date" id="rep-date" onchange="renderRepCards()" value="'+yesterday()+'"></div>\n    <div class="rcg" id="rep-cards"></div>';
+  el.innerHTML='<div class="sh"><div class="st">דיווח יומי - קופה בלבד</div></div>'
+    +'<div class="dbar" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px"><label style="font-weight:600;font-size:.85rem">תאריך:</label><input type="date" id="rep-date" onchange="renderRepCards()" value="'+yesterday()+'" style="font-size:1rem;padding:8px 12px;border-radius:8px;border:1px solid var(--b);background:var(--s2);color:var(--t);min-width:150px;-webkit-appearance:none;appearance:none"></div>'
+    +'<div class="rcg" id="rep-cards"></div>';
   renderRepCards();
 }
 
