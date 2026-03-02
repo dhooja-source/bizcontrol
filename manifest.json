@@ -1,0 +1,10 @@
+{
+  "name": "SHIFTY - ניהול עסקים ועובדים",
+  "short_name": "SHIFTY",
+  "description": "מערכת ניהול עסקים ועובדים",
+  "start_url": "/bizcontrol/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#f59e0b",
+  "orientation": "portrait"
+}
