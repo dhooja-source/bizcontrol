@@ -309,6 +309,7 @@ td:first-child{color:var(--t);font-weight:500;}
       <div class="lfield"><label class="fl">סניף</label><select class="fc" id="w-biz"></select></div>
       <div class="lfield"><label class="fl">שם העובד</label><input class="fc" id="w-nm" placeholder="ישראל ישראלי"></div>
       <div class="lfield"><label class="fl">תפקיד</label><input class="fc" id="w-rl" placeholder="קופאי"></div>
+      <div class="lfield"><label class="fl">שכר שעתי (₪)</label><input class="fc" id="w-hr" type="number" placeholder="40" min="0" step="0.5"></div>
     </div>
     <div class="mf"><button class="btn bg2" onclick="cm('mo-wrk')">ביטול</button><button class="btn bp" onclick="addWorker()">הוסף</button></div>
   </div>
@@ -390,7 +391,8 @@ function save() {
 // CONSTANTS
 // ===
 var HOURLY = 48;
-var EMP_MULT = 1.25;
+var EMP_MULT = 1.2683; // ביטוח לאומי 12% + פנסיה 6.5% + פיצויים 8.33%
+var DEFAULT_HOURLY = 48; // ברירת מחדל אם לא הוגדר שכר
 var PRESETS = [
   {id:'morning', name:'בוקר',       start:'07:00', end:'15:00', color:'var(--g)'},
   {id:'evening', name:'ערב',        start:'15:00', end:'23:00', color:'var(--v)'},
@@ -439,23 +441,51 @@ function timeDiff(s, e) {
   if(m < 0) m += 1440;
   return Math.round(m/60*10)/10;
 }
-function empCost(h) {
-  return Math.round(h * HOURLY * EMP_MULT);
+// חישוב עלות משמרת אחת כולל שעות נוספות
+// עד 8 שעות: רגיל, שעה 9-10: x1.25, שעה 11+: x1.50
+function shiftCost(h, rate) {
+  var regular = Math.min(h, 8);
+  var ot1     = Math.max(0, Math.min(h - 8, 2)); // שעות 9-10
+  var ot2     = Math.max(0, h - 10);              // שעה 11+
+  var gross   = (regular * rate) + (ot1 * rate * 1.25) + (ot2 * rate * 1.50);
+  return gross * EMP_MULT;
 }
+
+function empCost(h, hourly) {
+  var rate = hourly || DEFAULT_HOURLY;
+  return Math.round(shiftCost(h, rate));
+}
+
+// חישוב עלות לרשימת משמרות עם שכר פר-עובד
+function empCostForShifts(shifts) {
+  var total = 0;
+  for(var i=0;i<shifts.length;i++){
+    var s = shifts[i];
+    var h = timeDiff(s.start, s.end);
+    var w = null;
+    for(var j=0;j<wrk.length;j++){if(wrk[j].id===s.workerId){w=wrk[j];break;}}
+    var rate = (w && w.hourly) ? w.hourly : DEFAULT_HOURLY;
+    total += shiftCost(h, rate);
+  }
+  return Math.round(total);
+}
+var VAT = 1.18; // מע"מ 18%
+
 function costPct(cash, h) {
   if(!cash || cash <= 0) return null;
-  return Math.round(empCost(h)/cash*100);
+  var cashExVat = cash / VAT; // מחזור ללא מע"מ
+  return Math.round(empCost(h)/cashExVat*100);
 }
 function cCol(pct) {
   if(pct === null) return 'var(--m)';
-  if(pct < 25) return 'var(--g)';
-  if(pct < 35) return 'var(--a)';
+  if(pct < 20) return 'var(--g)';
+  if(pct < 25) return 'var(--a)';
   return 'var(--r)';
 }
 function cLbl(pct) {
   if(pct === null) return '-';
-  if(pct < 25) return 'מעולה';
-  if(pct < 35) return 'סביר';
+  if(pct < 20) return 'מעולה';
+  if(pct < 25) return 'סביר';
   return 'גבוה';
 }
 function schedH(bizId, date) {
@@ -602,16 +632,18 @@ function buildApp() {
     renderOverview();
   } else if(curUser.type === 'manager') {
     tabs.innerHTML = ''
-      + '<div class="tab active" onclick="sp(\'report\',this)">דיווח יומי</div>'
+      + '<div class="tab active" onclick="sp(\'mgr-overview\',this)">סקירה</div>'
+      + '<div class="tab" onclick="sp(\'report\',this)">דיווח יומי</div>'
       + '<div class="tab" onclick="sp(\'schedule\',this)">סידור עבודה</div>'
       + '<div class="tab" onclick="sp(\'requests\',this)">בקשות עובדים</div>'
       + '<div class="tab" onclick="sp(\'workers\',this)">עובדים</div>';
     main.innerHTML = ''
-      + '<div class="page active" id="page-report"></div>'
+      + '<div class="page active" id="page-mgr-overview"></div>'
+      + '<div class="page" id="page-report"></div>'
       + '<div class="page" id="page-schedule"></div>'
       + '<div class="page" id="page-requests"></div>'
       + '<div class="page" id="page-workers"></div>';
-    renderReport();
+    renderManagerOverview();
   } else {
     tabs.innerHTML = ''
       + '<div class="tab active" onclick="sp(\'emp-req\',this)">הגשת בקשות</div>'
@@ -640,6 +672,7 @@ function sp(name, el) {
     history: function(){ if(typeof renderHistory==='function') renderHistory(); },
     businesses: function(){ if(typeof renderBusinesses==='function') renderBusinesses(); },
     workers: function(){ if(typeof renderWorkers==='function') renderWorkers(); },
+    'mgr-overview': function(){ if(typeof renderManagerOverview==='function') renderManagerOverview(); },
     'emp-req': function(){ if(typeof renderEmpReq==='function') renderEmpReq(); },
     'emp-sched': function(){ if(typeof renderEmpSched==='function') renderEmpSched(); }
   };
@@ -660,6 +693,98 @@ function addBiz() {
   document.getElementById('biz-mg').value = '';
   toast('הסניף נוסף!'); renderBusinesses();
 }
+function renderManagerOverview() {
+  var el = document.getElementById('page-mgr-overview');
+  if(!el || !curUser) return;
+  var bizId = curUser.bizId;
+  var bizObj = null;
+  for(var i=0;i<biz.length;i++){if(biz[i].id===bizId){bizObj=biz[i];break;}}
+  if(!bizObj){el.innerHTML='<div class="empty"><div>סניף לא נמצא</div></div>';return;}
+
+  var myRep = rep.filter(function(r){return parseInt(r.bizId)===parseInt(bizId);});
+  var s = calcStats(myRep);
+  var date = yesterday();
+  var pendingReqs = reqs.filter(function(r){
+    var w = wrk.filter(function(w2){return w2.bizId===bizId&&w2.id===r.workerId;});
+    return w.length && r.status==='pending';
+  }).length;
+
+  function statCard(label, cash, emp, pct, sub) {
+    return '<div class="sc" style="min-width:140px">'
+      + '<div class="sc-l">'+label+'</div>'
+      + '<div class="sc-v gold">₪'+cash.toLocaleString()+'</div>'
+      + '<div style="font-size:.75rem;color:var(--r);font-weight:600;margin-top:2px">עלות: ₪'+emp.toLocaleString()+'</div>'
+      + '<div class="sc-s" style="color:'+cCol(pct)+';font-weight:700">'+(pct!==null?pct+'% מהמחזור':'-')+'</div>'
+      + '<div class="sc-s">'+sub+'</div>'
+      + '</div>';
+  }
+
+  // Missing report alert
+  var hasYesterday = false;
+  for(var i=0;i<myRep.length;i++){if(myRep[i].date===date){hasYesterday=true;break;}}
+  var alertH = hasYesterday
+    ? '<div style="background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.3);border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:.85rem;color:var(--g);font-weight:600">✓ דיווח אתמול הוגש</div>'
+    : '<div style="background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:10px;padding:12px 16px;margin-bottom:14px"><div style="font-size:.85rem;font-weight:700;color:var(--r)">⚠ לא דיווחת אתמול ('+fmt(date)+')</div><div style="font-size:.78rem;color:var(--m);margin-top:3px">עבור לדיווח יומי והזן את הנתונים</div></div>';
+
+  el.innerHTML =
+    '<div class="sh"><div class="st">סקירה - '+bizObj.name+'</div></div>' +
+    alertH +
+    '<div class="stats">' +
+    statCard('קופה אתמול', s.dayCash, empCost(s.dayH), s.dayPct, fmt(date)) +
+    statCard('סך שבועי', s.weekCash, empCost(s.weekH), s.weekAvg, 'ממוצע יומי: '+(s.weekDays>0?Math.round(s.weekCash/s.weekDays).toLocaleString()+' ₪':'-')) +
+    statCard('סך חודשי', s.monthCash, empCost(s.monthH), s.monthAvg, 'ממוצע יומי: '+(s.monthDays>0?Math.round(s.monthCash/s.monthDays).toLocaleString()+' ₪':'-')) +
+    (pendingReqs?'<div class="sc"><div class="sc-l">בקשות ממתינות</div><div class="sc-v" style="color:var(--a)">'+pendingReqs+'</div><div class="sc-s">מעובדים</div></div>':'') +
+    '</div>';
+}
+
+function editWorker(wid) {
+  var w = null;
+  for(var i=0;i<wrk.length;i++){if(wrk[i].id===wid){w=wrk[i];break;}}
+  if(!w) return;
+  fillSel('w-biz', biz.map(function(b){return {v:b.id,l:b.name};}));
+  document.getElementById('w-biz').value = w.bizId;
+  document.getElementById('w-nm').value  = w.name;
+  document.getElementById('w-rl').value  = w.role||'';
+  document.getElementById('w-hr').value  = w.hourly||'';
+  // Change modal button to save edit
+  var btn = document.querySelector('#mo-wrk .btn.bp');
+  if(btn) { btn.textContent='שמור'; btn.onclick = function(){saveEditWorker(wid);}; }
+  var title = document.querySelector('#mo-wrk .mt');
+  if(title) title.textContent = 'עריכת עובד';
+  om('mo-wrk');
+}
+
+function saveEditWorker(wid) {
+  var nm = document.getElementById('w-nm').value.trim();
+  if(!nm) { alert('יש להזין שם'); return; }
+  for(var i=0;i<wrk.length;i++){
+    if(wrk[i].id===wid){
+      wrk[i].name   = nm;
+      wrk[i].role   = document.getElementById('w-rl').value.trim();
+      wrk[i].hourly = parseFloat(document.getElementById('w-hr').value)||0;
+      break;
+    }
+  }
+  save(); cm('mo-wrk');
+  // Reset modal
+  resetWorkerModal();
+  toast('עובד עודכן!');
+  var pgW = document.getElementById('page-workers');
+  var pgB = document.getElementById('page-businesses');
+  if(pgW && pgW.classList.contains('active')) renderWorkers();
+  else if(pgB) renderBusinesses();
+}
+
+function resetWorkerModal() {
+  var btn = document.querySelector('#mo-wrk .btn.bp');
+  if(btn) { btn.textContent='הוסף'; btn.onclick = addWorker; }
+  var title = document.querySelector('#mo-wrk .mt');
+  if(title) title.textContent = 'הוסף עובד';
+  document.getElementById('w-nm').value = '';
+  document.getElementById('w-rl').value = '';
+  document.getElementById('w-hr').value = '';
+}
+
 function renderWorkers() {
   var el = document.getElementById('page-workers');
   if(!el) return;
@@ -681,7 +806,8 @@ function renderWorkers() {
       h += '<div class="wc">'
          + '<div class="wa">'+initials(w.name)+'</div>'
          + '<div class="wn">'+w.name+'</div>'
-         + '<div class="wr">'+w.role+'</div>'
+         + '<div class="wr">'+(w.role||'')+'</div>'
+         + '<div class="wr" style="font-size:.72rem;color:var(--a);font-weight:700">'+(w.hourly?'&#8362;'+w.hourly+'/sh':'שכר לא הוגדר')+'</div>'
          + '<div class="wf">'
          + '<button class="btn bv bsm" onclick="editWorker('+w.id+')">ערוך</button>'
          + '<button class="btn br bsm" onclick="delWorker('+w.id+')">מחק</button>'
@@ -765,15 +891,19 @@ function openAddWorker(bizId) {
   document.getElementById('w-biz').value = bizId;
   document.getElementById('w-nm').value = '';
   document.getElementById('w-rl').value = '';
+  document.getElementById('w-hr').value = '';
+  resetWorkerModal();
   om('mo-wrk');
 }
 function addWorker() {
-  var bizId = parseInt(document.getElementById('w-biz').value);
-  var name  = document.getElementById('w-nm').value.trim();
-  var role  = document.getElementById('w-rl').value.trim();
+  var bizId  = parseInt(document.getElementById('w-biz').value);
+  var name   = document.getElementById('w-nm').value.trim();
+  var role   = document.getElementById('w-rl').value.trim();
+  var hourly = parseFloat(document.getElementById('w-hr').value) || 0;
   if(!name) { alert('יש להזין שם'); return; }
-  wrk.push({id:Date.now(), bizId:bizId, name:name, role:role});
+  wrk.push({id:Date.now(), bizId:bizId, name:name, role:role, hourly:hourly});
   save(); cm('mo-wrk');
+  resetWorkerModal();
   toast('העובד נוסף!'); renderBusinesses();
 }
 function delWorker(id) {
@@ -805,8 +935,8 @@ function renderBusinesses() {
         h += '<div style="font-size:.7rem;color:var(--m);font-weight:600;margin-top:8px;margin-bottom:5px">עובדים:</div>';
         h += '<div class="wl">';
         for(var j=0; j<bw.length; j++) {
-          h += '<div class="wr"><div><div class="wr-n">'+bw[j].name+'</div><div class="wr-r">'+(bw[j].role||'-')+'</div></div>';
-          h += '<button class="btn br bsm" onclick="delWorker('+bw[j].id+')">הסר</button></div>';
+          h += '<div class="wr"><div><div class="wr-n">'+bw[j].name+'</div><div class="wr-r">'+(bw[j].role||'-')+'</div>'+(bw[j].hourly?'<div style="font-size:.68rem;color:var(--a)">&#8362;'+bw[j].hourly+'/sh</div>':'')+'</div>';
+          h += '<div style="display:flex;gap:4px"><button class="btn bv bsm" onclick="editWorker('+bw[j].id+')">ערוך</button><button class="btn br bsm" onclick="delWorker('+bw[j].id+')">הסר</button></div></div>';
         }
         h += '</div>';
       }
@@ -1216,6 +1346,63 @@ function delShift(id)    { shf=shf.filter(function(s){return s.id!==id;}); save(
 // REPORT & OTHER SECTIONS
 // ===
 
+
+// ניתוח שעות נוספות לסניף בטווח תאריכים
+function overtimeAnalysis(bizId, dateFrom, dateTo) {
+  var bizShifts = shf.filter(function(s){
+    return parseInt(s.bizId)===parseInt(bizId) && s.date>=dateFrom && s.date<=dateTo;
+  });
+
+  var totalH = 0, otH = 0, otCost = 0, regularCost = 0;
+  var workerOT = {}; // workerId -> otH
+
+  for(var i=0;i<bizShifts.length;i++){
+    var s = bizShifts[i];
+    var h = timeDiff(s.start, s.end);
+    var w = null;
+    for(var j=0;j<wrk.length;j++){if(wrk[j].id===s.workerId){w=wrk[j];break;}}
+    var rate = (w && w.hourly) ? w.hourly : DEFAULT_HOURLY;
+
+    var regular = Math.min(h, 8);
+    var ot = Math.max(0, h - 8);
+    var ot1 = Math.min(ot, 2);
+    var ot2 = Math.max(0, ot - 2);
+
+    totalH += h;
+    otH    += ot;
+
+    // עלות רגילה (כאילו כולן שעות רגילות)
+    regularCost += h * rate * EMP_MULT;
+    // עלות בפועל עם שעות נוספות
+    var actual = ((regular * rate) + (ot1 * rate * 1.25) + (ot2 * rate * 1.50)) * EMP_MULT;
+    otCost += (actual - (h * rate * EMP_MULT)); // הפרש = עלות נוספת
+
+    if(ot > 0) {
+      var wid = s.workerId;
+      workerOT[wid] = (workerOT[wid] || 0) + ot;
+    }
+  }
+
+  // עובדים שחרגו מעל 2 שעות נוספות
+  var exceeded = [];
+  var wids = Object.keys(workerOT);
+  for(var i=0;i<wids.length;i++){
+    if(workerOT[wids[i]] > 2) {
+      var w2 = null;
+      for(var j=0;j<wrk.length;j++){if(wrk[j].id===parseInt(wids[i])){w2=wrk[j];break;}}
+      if(w2) exceeded.push({name:w2.name, ot:Math.round(workerOT[wids[i]]*10)/10});
+    }
+  }
+
+  return {
+    totalH:     Math.round(totalH*10)/10,
+    otH:        Math.round(otH*10)/10,
+    otCost:     Math.round(otCost),
+    otPct:      totalH>0 ? Math.round(otH/totalH*100) : 0,
+    exceeded:   exceeded
+  };
+}
+
 var ovBizFilter = null; // null = כולם, or bizId
 
 function calcStats(repArr) {
@@ -1302,6 +1489,36 @@ function renderOverview(){
     '<div class="sc"><div class="sc-l">דיווחים אתמול</div><div class="sc-v" style="color:'+(reported===total&&total>0?'var(--g)':'var(--a)')+'">'+reported+'/'+total+'</div><div class="sc-s">סניפים דיווחו</div></div>' +
     (pendingReqs?'<div class="sc"><div class="sc-l">בקשות ממתינות</div><div class="sc-v" style="color:var(--a)">'+pendingReqs+'</div><div class="sc-s">מעובדים</div></div>':'') +
     '</div>' +
+    (function(){
+      // overtime this week
+      var wStart2=getWeekStart(today()); var wEnd2=addDays(wStart2,6);
+      var otBizIds = ovBizFilter ? [ovBizFilter] : biz.map(function(b){return b.id;});
+      var totalOtH=0, totalOtCost=0, totalShH=0, allExceeded=[];
+      for(var i=0;i<otBizIds.length;i++){
+        var ot=overtimeAnalysis(otBizIds[i], wStart2, wEnd2);
+        totalOtH+=ot.otH; totalOtCost+=ot.otCost; totalShH+=ot.totalH;
+        for(var j=0;j<ot.exceeded.length;j++) allExceeded.push(ot.exceeded[j]);
+      }
+      var otPct = totalShH>0?Math.round(totalOtH/totalShH*100):0;
+      if(totalOtH===0) return '';
+      var html2='<div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:14px 16px;margin-bottom:14px">';
+      html2+='<div style="font-weight:700;font-size:.88rem;color:var(--a);margin-bottom:10px">⏱ שעות נוספות השבוע</div>';
+      html2+='<div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:8px">';
+      html2+='<div style="background:var(--s2);border-radius:8px;padding:8px 12px;flex:1;min-width:100px"><div style="font-size:.7rem;color:var(--m)">סה"כ ש"נ</div><div style="font-weight:700;color:var(--a)">'+totalOtH+'h</div></div>';
+      html2+='<div style="background:var(--s2);border-radius:8px;padding:8px 12px;flex:1;min-width:100px"><div style="font-size:.7rem;color:var(--m)">עלות נוספת</div><div style="font-weight:700;color:var(--r)">₪'+totalOtCost.toLocaleString()+'</div></div>';
+      html2+='<div style="background:var(--s2);border-radius:8px;padding:8px 12px;flex:1;min-width:100px"><div style="font-size:.7rem;color:var(--m)">% מסך שעות</div><div style="font-weight:700;color:'+(otPct>15?'var(--r)':'var(--a)')+'">'+otPct+'%</div></div>';
+      html2+='</div>';
+      if(allExceeded.length){
+        html2+='<div style="font-size:.75rem;color:var(--r);font-weight:600;margin-bottom:5px">⚠ עובדים שחרגו:</div>';
+        html2+='<div style="display:flex;flex-wrap:wrap;gap:5px">';
+        for(var i=0;i<allExceeded.length;i++){
+          html2+='<span style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:6px;padding:2px 8px;font-size:.75rem;color:var(--r)">'+allExceeded[i].name+' ('+allExceeded[i].ot+'h)</span>';
+        }
+        html2+='</div>';
+      }
+      html2+='</div>';
+      return html2;
+    })() +
     (function(){
       var missing = [];
       var filtBiz = ovBizFilter ? biz.filter(function(b){return b.id===ovBizFilter;}) : biz;
