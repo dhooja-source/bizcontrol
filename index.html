@@ -357,6 +357,15 @@ td:first-child{color:var(–t);font-weight:500;}
 
 <div class="print-overlay" id="print-overlay"></div>
 
+<!-- CELL PICKER MODAL -->
+
+<div class="mo" id="mo-cell-picker">
+  <div class="md" style="max-width:320px;width:95vw;max-height:80vh;display:flex;flex-direction:column">
+    <div class="mh"><span class="mt">בחר עובד למשמרת</span><button class="mc" onclick="cm('mo-cell-picker')">&#x2715;</button></div>
+    <div class="mb" id="cell-picker-body" style="overflow-y:auto"></div>
+  </div>
+</div>
+
 <script>
 // ===
 // STORAGE
@@ -1163,7 +1172,7 @@ function renderSchedule() {
     })(chips[i]);
   }
 
-  // Attach drop and click events to cells
+  // Attach drop events to cells
   var cells = el.querySelectorAll('.sched-cell');
   for(var i=0; i<cells.length; i++) {
     (function(cell) {
@@ -1182,15 +1191,6 @@ function renderSchedule() {
         var shift2 = cell.getAttribute('data-shift');
         dropWorker(dragWId, date2, shift2);
         dragWId = null;
-      });
-      // Click on empty cell to pick worker (works on iOS)
-      cell.addEventListener('click', function(e) {
-        // Only if cell is empty (no shift assigned)
-        var isEmpty = cell.querySelector('button[onclick*="delShift"]') === null;
-        if(!isEmpty) return;
-        var date2  = cell.getAttribute('data-date');
-        var shift2 = cell.getAttribute('data-shift');
-        if(date2 && shift2) openCellPicker(date2, shift2);
       });
     })(cells[i]);
   }
@@ -1259,7 +1259,7 @@ function buildCell(date, shift, row, cellShifts, bizWorkers) {
     h += '</div>';
   } else {
     // Empty drop zone - clickable to pick from requested workers
-    h += '<div style="height:38px;border:1px dashed rgba(42,48,64,.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.68rem;color:rgba(107,114,128,.4);cursor:pointer">+ הוסף עובד</div>';
+    h += '<div onclick="openCellPicker(\''+date+'\',\''+shift+'\')" style="height:38px;border:1px dashed rgba(42,48,64,.5);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:.68rem;color:rgba(107,114,128,.4);cursor:pointer;-webkit-tap-highlight-color:rgba(245,158,11,.2)">+ הוסף עובד</div>';
   }
 
   h += '</td>';
@@ -1313,18 +1313,7 @@ function openCellPicker(date, shift) {
     h += '<div style="font-size:.82rem;color:var(--m);text-align:center;padding:16px">כל העובדים כבר בסידור</div>';
   }
 
-  // Show in a simple modal
-  var mo = document.getElementById('mo-cell-picker');
-  if(!mo) {
-    mo = document.createElement('div');
-    mo.className = 'mo';
-    mo.id = 'mo-cell-picker';
-    mo.innerHTML = '<div class="md" style="max-width:320px;width:95vw">'
-      + '<div class="mh"><span class="mt">בחר עובד למשמרת</span><button class="mc" onclick="cm(\'mo-cell-picker\')">&#x2715;</button></div>'
-      + '<div class="mb" id="cell-picker-body"></div>'
-      + '</div>';
-    document.body.appendChild(mo);
-  }
+  // Show in static modal
   document.getElementById('cell-picker-body').innerHTML = h;
   om('mo-cell-picker');
 }
