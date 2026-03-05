@@ -177,10 +177,10 @@ td:first-child{color:var(--t);font-weight:500;}
 .worker-chip:hover{opacity:.8;}
 
 /* PRESET CARDS */
-.pcard{background:var(--s2);border:2px solid var(--b);border-radius:10px;padding:11px 13px;cursor:pointer;font-size:.82rem;transition:all .15s;}
+.pcard{background:var(--s2);border:2px solid var(--b);border-radius:10px;padding:8px 6px;cursor:pointer;font-size:.8rem;transition:all .15s;text-align:center;min-height:44px;display:flex;align-items:center;justify-content:center;}
 .pcard:hover{border-color:var(--a-l);}
 .pcard.sel{border-color:var(--a);background:var(--a-l);}
-.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.preset-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px;}.preset-grid .pbtn{font-size:.82rem;padding:10px 6px;line-height:1.3;text-align:center;}
 
 /* REQUESTS */
 .req-card{background:var(--card);border:1px solid var(--b);border-radius:12px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow);}
@@ -321,9 +321,9 @@ td:first-child{color:var(--t);font-weight:500;}
 </div>
 
 <div class="mo" id="mo-preset">
-  <div class="md" style="display:flex;flex-direction:column;max-height:90vh">
-    <div class="mh"><span class="mt" id="preset-title">בחר משמרת</span><button class="mc" onclick="cm('mo-preset')">&#x2715;</button></div>
-    <div class="mb" style="flex:1;overflow-y:auto">
+  <div class="md" style="display:flex;flex-direction:column;max-height:90vh;width:min(95vw,380px)">
+    <div class="mh" style="padding:10px 14px"><span class="mt" style="font-size:.88rem" id="preset-title">בחר משמרת</span><button class="mc" onclick="cm('mo-preset')">&#x2715;</button></div>
+    <div class="mb" style="flex:1;overflow-y:auto;padding:10px 12px">
       <div class="preset-grid" id="preset-row"></div>
       <div id="custom-times" style="display:none">
         <div class="frow">
@@ -341,9 +341,9 @@ td:first-child{color:var(--t);font-weight:500;}
         </div>
       </div>
     </div>
-    <div class="mf" style="flex-shrink:0;padding:12px 16px;border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end;background:var(--card)">
+    <div class="mf" style="flex-shrink:0;padding:10px 12px;border-top:1px solid var(--b);display:flex;gap:8px;justify-content:flex-end;background:var(--card)">
       <button class="btn bg2" onclick="cm('mo-preset')">ביטול</button>
-      <button class="btn bp" style="min-width:130px;font-size:1rem;padding:12px 20px" onclick="confirmShift()">✓ אשר משמרת</button>
+      <button class="btn bp" style="font-size:.9rem;padding:10px 16px" onclick="confirmShift()">✓ אשר משמרת</button>
     </div>
   </div>
 </div>
@@ -448,10 +448,12 @@ function timeDiff(s, e) {
 }
 // חישוב עלות משמרת אחת כולל שעות נוספות
 // עד 8 שעות: רגיל, שעה 9-10: x1.25, שעה 11+: x1.50
+// חישוב עלות יומית לעובד לפי סך שעות יומי (כולל בוקר+ערב)
+// עד 8.5 שעות: רגיל | 8.5-10.5: 125% | מעל 10.5: 150%
 function shiftCost(h, rate) {
-  var regular = Math.min(h, 8);
-  var ot1     = Math.max(0, Math.min(h - 8, 2)); // שעות 9-10
-  var ot2     = Math.max(0, h - 10);              // שעה 11+
+  var regular = Math.min(h, 8.5);
+  var ot1     = Math.max(0, Math.min(h - 8.5, 2)); // 125%
+  var ot2     = Math.max(0, h - 10.5);              // 150%
   var gross   = (regular * rate) + (ot1 * rate * 1.25) + (ot2 * rate * 1.50);
   return gross * EMP_MULT;
 }
@@ -461,16 +463,26 @@ function empCost(h, hourly) {
   return Math.round(shiftCost(h, rate));
 }
 
-// חישוב עלות לרשימת משמרות עם שכר פר-עובד
+// חישוב עלות לרשימת משמרות - מחבר שעות לפי עובד+יום
 function empCostForShifts(shifts) {
-  var total = 0;
+  // קיבוץ שעות לפי עובד + תאריך
+  var workerDayH = {};
+  var workerRate = {};
   for(var i=0;i<shifts.length;i++){
     var s = shifts[i];
     var h = timeDiff(s.start, s.end);
-    var w = null;
-    for(var j=0;j<wrk.length;j++){if(wrk[j].id===s.workerId){w=wrk[j];break;}}
-    var rate = (w && w.hourly) ? w.hourly : DEFAULT_HOURLY;
-    total += shiftCost(h, rate);
+    var key = s.workerId + '_' + s.date;
+    workerDayH[key] = (workerDayH[key] || 0) + h;
+    if(!workerRate[key]) {
+      var w = null;
+      for(var j=0;j<wrk.length;j++){if(wrk[j].id===s.workerId){w=wrk[j];break;}}
+      workerRate[key] = (w && w.hourly) ? w.hourly : DEFAULT_HOURLY;
+    }
+  }
+  var total = 0;
+  var keys = Object.keys(workerDayH);
+  for(var i=0;i<keys.length;i++){
+    total += shiftCost(workerDayH[keys[i]], workerRate[keys[i]]);
   }
   return Math.round(total);
 }
@@ -707,7 +719,7 @@ function renderManagerOverview() {
   if(!bizObj){el.innerHTML='<div class="empty"><div>סניף לא נמצא</div></div>';return;}
 
   var myRep = rep.filter(function(r){return parseInt(r.bizId)===parseInt(bizId);});
-  var s = calcStats(myRep);
+  var s = calcStats(myRep, [bizId]);
   var date = yesterday();
   var pendingReqs = reqs.filter(function(r){
     var w = wrk.filter(function(w2){return w2.bizId===bizId&&w2.id===r.workerId;});
@@ -735,9 +747,9 @@ function renderManagerOverview() {
     '<div class="sh"><div class="st">סקירה - '+bizObj.name+'</div></div>' +
     alertH +
     '<div class="stats">' +
-    statCard('קופה אתמול', s.dayCash, empCost(s.dayH), s.dayPct, fmt(date)) +
-    statCard('סך שבועי', s.weekCash, empCost(s.weekH), s.weekAvg, 'ממוצע יומי: '+(s.weekDays>0?Math.round(s.weekCash/s.weekDays).toLocaleString()+' ₪':'-')) +
-    statCard('סך חודשי', s.monthCash, empCost(s.monthH), s.monthAvg, 'ממוצע יומי: '+(s.monthDays>0?Math.round(s.monthCash/s.monthDays).toLocaleString()+' ₪':'-')) +
+    statCard('קופה אתמול', s.dayCash, s.dayEmp, s.dayPct, fmt(date)) +
+    statCard('סך שבועי', s.weekCash, s.weekEmp, s.weekAvg, 'ממוצע יומי: '+(s.weekDays>0?Math.round(s.weekCash/s.weekDays).toLocaleString()+' ₪':'-')) +
+    statCard('סך חודשי', s.monthCash, s.monthEmp, s.monthAvg, 'ממוצע יומי: '+(s.monthDays>0?Math.round(s.monthCash/s.monthDays).toLocaleString()+' ₪':'-')) +
     (pendingReqs?'<div class="sc"><div class="sc-l">בקשות ממתינות</div><div class="sc-v" style="color:var(--a)">'+pendingReqs+'</div><div class="sc-s">מעובדים</div></div>':'') +
     '</div>';
 }
@@ -1410,7 +1422,7 @@ function overtimeAnalysis(bizId, dateFrom, dateTo) {
 
 var ovBizFilter = null; // null = כולם, or bizId
 
-function calcStats(repArr) {
+function calcStats(repArr, bizIds) {
   var date = yesterday();
   var wStart = getWeekStart(today());
   var wEnd   = addDays(wStart, 6);
@@ -1420,35 +1432,53 @@ function calcStats(repArr) {
   // Deduplicate: keep only latest entry per bizId+date combo
   var seen = {};
   var deduped = [];
-  var sorted = repArr.slice().sort(function(a,b){return b.id-a.id;}); // newest first
+  var sorted = repArr.slice().sort(function(a,b){return b.id-a.id;});
   for(var i=0;i<sorted.length;i++){
     var key = parseInt(sorted[i].bizId)+'_'+sorted[i].date;
     if(!seen[key]){ seen[key]=true; deduped.push(sorted[i]); }
   }
   repArr = deduped;
-  console.log('rep after dedup:', repArr.length, JSON.stringify(repArr.map(function(r){return {bizId:r.bizId,date:r.date,cash:r.cash};})));
 
   var dayR   = repArr.filter(function(r){return r.date===date;});
   var weekR  = repArr.filter(function(r){return r.date>=wStart&&r.date<=wEnd;});
   var monthR = repArr.filter(function(r){return r.date>=mStart;});
 
-  function avg(arr) {
-    if(!arr.length) return null;
-    var s = arr.reduce(function(a,r){var p=costPct(r.cash,r.hours);return a+(p||0);},0);
-    return Math.round(s/arr.length);
+  // עלות מעביד מהסידור (מדויק עם שעות נוספות)
+  function shiftsFor(dateFrom, dateTo) {
+    return shf.filter(function(s){
+      if(bizIds && bizIds.length) {
+        var match = false;
+        for(var i=0;i<bizIds.length;i++){ if(parseInt(s.bizId)===parseInt(bizIds[i])){match=true;break;} }
+        if(!match) return false;
+      }
+      return s.date>=dateFrom && s.date<=dateTo;
+    });
+  }
+
+  var dayEmp   = empCostForShifts(shiftsFor(date, date));
+  var weekEmp  = empCostForShifts(shiftsFor(wStart, wEnd));
+  var monthEmp = empCostForShifts(shiftsFor(mStart, today()));
+
+  var dayCash  = dayR.reduce(function(a,r){return a+r.cash;},0);
+  var weekCash = weekR.reduce(function(a,r){return a+r.cash;},0);
+  var monthCash= monthR.reduce(function(a,r){return a+r.cash;},0);
+
+  function pctFromCost(cash, empCostVal) {
+    if(!cash || cash<=0) return null;
+    return Math.round(empCostVal / (cash/VAT) * 100);
   }
 
   return {
-    dayCash:   dayR.reduce(function(a,r){return a+r.cash;},0),
-    dayH:      dayR.reduce(function(a,r){return a+r.hours;},0),
-    dayPct:    costPct(dayR.reduce(function(a,r){return a+r.cash;},0), dayR.reduce(function(a,r){return a+r.hours;},0)),
-    weekCash:  weekR.reduce(function(a,r){return a+r.cash;},0),
-    weekH:     weekR.reduce(function(a,r){return a+r.hours;},0),
-    weekAvg:   avg(weekR),
+    dayCash:   dayCash,
+    dayEmp:    dayEmp,
+    dayPct:    pctFromCost(dayCash, dayEmp),
+    weekCash:  weekCash,
+    weekEmp:   weekEmp,
+    weekAvg:   pctFromCost(weekCash, weekEmp),
     weekDays:  weekR.length,
-    monthCash: monthR.reduce(function(a,r){return a+r.cash;},0),
-    monthH:    monthR.reduce(function(a,r){return a+r.hours;},0),
-    monthAvg:  avg(monthR),
+    monthCash: monthCash,
+    monthEmp:  monthEmp,
+    monthAvg:  pctFromCost(monthCash, monthEmp),
     monthDays: monthR.length
   };
 }
@@ -1472,8 +1502,9 @@ function renderOverview(){
   filterH += '</div></div>';
 
   // Filter rep data
-  var filtRep = ovBizFilter ? rep.filter(function(r){return r.bizId===ovBizFilter;}) : rep;
-  var s = calcStats(filtRep);
+  var filtRep = ovBizFilter ? rep.filter(function(r){return parseInt(r.bizId)===parseInt(ovBizFilter);}) : rep;
+  var bizIds = ovBizFilter ? [ovBizFilter] : biz.map(function(b){return b.id;});
+  var s = calcStats(filtRep, bizIds);
   var bizLabel = ovBizFilter ? biz.filter(function(b){return b.id===ovBizFilter;})[0].name : 'כל הסניפים';
 
   function statCard(label, cash, emp, pct, sub) {
@@ -1488,9 +1519,9 @@ function renderOverview(){
 
   el.innerHTML = filterH +
     '<div class="stats">' +
-    statCard('סך קופה אתמול', s.dayCash, empCost(s.dayH), s.dayPct, fmt(date)) +
-    statCard('סך קופה שבועי', s.weekCash, empCost(s.weekH), s.weekAvg, 'ממוצע יומי: '+(s.weekDays>0?Math.round(s.weekCash/s.weekDays).toLocaleString()+' ₪':'-')) +
-    statCard('סך קופה חודשי', s.monthCash, empCost(s.monthH), s.monthAvg, 'ממוצע יומי: '+(s.monthDays>0?Math.round(s.monthCash/s.monthDays).toLocaleString()+' ₪':'-')) +
+    statCard('סך קופה אתמול', s.dayCash, s.dayEmp, s.dayPct, fmt(date)) +
+    statCard('סך קופה שבועי', s.weekCash, s.weekEmp, s.weekAvg, 'ממוצע יומי: '+(s.weekDays>0?Math.round(s.weekCash/s.weekDays).toLocaleString()+' ₪':'-')) +
+    statCard('סך קופה חודשי', s.monthCash, s.monthEmp, s.monthAvg, 'ממוצע יומי: '+(s.monthDays>0?Math.round(s.monthCash/s.monthDays).toLocaleString()+' ₪':'-')) +
     '<div class="sc"><div class="sc-l">דיווחים אתמול</div><div class="sc-v" style="color:'+(reported===total&&total>0?'var(--g)':'var(--a)')+'">'+reported+'/'+total+'</div><div class="sc-s">סניפים דיווחו</div></div>' +
     (pendingReqs?'<div class="sc"><div class="sc-l">בקשות ממתינות</div><div class="sc-v" style="color:var(--a)">'+pendingReqs+'</div><div class="sc-s">מעובדים</div></div>':'') +
     '</div>' +
