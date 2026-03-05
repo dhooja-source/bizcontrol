@@ -1646,7 +1646,7 @@ function renderRepCards() {
       h += '<div><div class="il">סך קופה (₪)</div>';
       h += '<div class="if-w"><span class="if-p">₪</span>';
       h += '<input class="rif" type="number" id="cash-'+b.id+'" placeholder="0" min="0"></div></div>';
-      h += '<div><div class="il">שעות עובדים '+(hasSched?'(מהסידור)':'(הזן ידנית)')+'</div>';
+      h += '<div><div class="il">שעות עובדים'+(hasSched?' <span style="color:var(--g);font-size:.75rem">(מהסידור)</span>':'')+'</div>';
       h += '<input class="rif" type="number" id="hrs-'+b.id+'" value="'+(autoH||'')+'" placeholder="0" min="0" step="0.5"'+(hasSched?' readonly':'')+' ></div>';
       h += '<div id="pv-'+b.id+'" style="display:none" class="cbadge">';
       h += '<span style="color:var(--m)">עלות: <strong id="pc-'+b.id+'"></strong></span>';
