@@ -357,15 +357,6 @@ td:first-child{color:var(–t);font-weight:500;}
 
 <div class="print-overlay" id="print-overlay"></div>
 
-<!-- CELL PICKER MODAL -->
-
-<div class="mo" id="mo-cell-picker">
-  <div class="md" style="max-width:320px;width:95vw;max-height:80vh;display:flex;flex-direction:column">
-    <div class="mh"><span class="mt">בחר עובד למשמרת</span><button class="mc" onclick="cm('mo-cell-picker')">&#x2715;</button></div>
-    <div class="mb" id="cell-picker-body" style="overflow-y:auto"></div>
-  </div>
-</div>
-
 <script>
 // ===
 // STORAGE
@@ -2555,7 +2546,16 @@ var firstTab = document.querySelector(’.ltab’);
 if(firstTab) setLMode(‘owner’, firstTab);
 }, 8000);
 });
-;</script>
+</script>
+
+<!-- CELL PICKER MODAL -->
+
+<div class="mo" id="mo-cell-picker">
+  <div class="md" style="max-width:320px;width:95vw;max-height:80vh;display:flex;flex-direction:column">
+    <div class="mh"><span class="mt">בחר עובד למשמרת</span><button class="mc" onclick="cm('mo-cell-picker')">&#x2715;</button></div>
+    <div class="mb" id="cell-picker-body" style="overflow-y:auto"></div>
+  </div>
+</div>
 
 <script>
 if('serviceWorker' in navigator) {
