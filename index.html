@@ -238,6 +238,37 @@ td:first-child{color:var(--t);font-weight:500;}
 <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
+<script>
+// Security - prevent copying and restrict to domain
+(function(){
+  // Block right click
+  document.addEventListener('contextmenu', function(e){ e.preventDefault(); });
+  
+  // Block common copy shortcuts
+  document.addEventListener('keydown', function(e){
+    if((e.ctrlKey||e.metaKey) && (e.key==='u'||e.key==='s'||e.key==='U'||e.key==='S')) {
+      e.preventDefault();
+    }
+  });
+
+  // Block text selection on non-input elements
+  document.addEventListener('selectstart', function(e){
+    if(e.target.tagName!=='INPUT'&&e.target.tagName!=='TEXTAREA'){
+      e.preventDefault();
+    }
+  });
+
+  // Domain lock
+  var allowed = ['dhooja-source.github.io', 'localhost', '127.0.0.1'];
+  var host = window.location.hostname;
+  var ok = false;
+  for(var i=0;i<allowed.length;i++){ if(host===allowed[i]){ok=true;break;} }
+  if(!ok){
+    document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;direction:rtl"><div style="text-align:center"><h2>⛔ גישה נדחתה</h2><p>אפליקציה זו מורשית להפעלה בדומיין מורשה בלבד.</p></div></div>';
+  }
+})();
+</script>
+
 
 <div id="toast" class="toast"></div>
 
