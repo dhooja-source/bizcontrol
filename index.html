@@ -2393,21 +2393,28 @@ function autoSchedule() {
     var times = presetTimes[r.presetId];
     if(!times) continue;
 
-    shf.push({
-      id:       Date.now() + added,
-      bizId:    schedBiz,
-      workerId: r.workerId,
-      date:     r.date,
-      start:    times.start,
-      end:      times.end,
-      preset:   r.presetId,
-      fromAuto: true
-    });
+    if(r.presetId === 'full') {
+      // כל היום = בוקר + ערב
+      shf.push({id:Date.now()+added, bizId:schedBiz, workerId:r.workerId, date:r.date, start:'09:00', end:'16:00', preset:'morning', fromAuto:true});
+      added++;
+      shf.push({id:Date.now()+added, bizId:schedBiz, workerId:r.workerId, date:r.date, start:'17:00', end:'00:00', preset:'evening', fromAuto:true});
+      added++;
+    } else {
+      shf.push({
+        id:       Date.now() + added,
+        bizId:    schedBiz,
+        workerId: r.workerId,
+        date:     r.date,
+        start:    times.start,
+        end:      times.end,
+        preset:   r.presetId,
+        fromAuto: true
+      });
+      added++;
+    }
 
     // Approve pending request
     if(r.status === 'pending') r.status = 'approved';
-
-    added++;
   }
 
   if(added === 0) {
