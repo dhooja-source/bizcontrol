@@ -623,7 +623,7 @@ function setLMode(mode, el) {
 function doLogin() {
   var name = document.getElementById('l-name').value.trim();
   var code = document.getElementById('l-code').value.trim();
-  if(!name) { alert('יש להזין שם'); return; }
+  if(!name && lMode !== 'employee') { alert('יש להזין שם'); return; }
   if(lMode === 'owner') {
     if(code !== '1234') { alert('קוד שגוי'); return; }
     curUser = {type:'owner', name:name};
