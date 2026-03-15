@@ -261,16 +261,15 @@ td:first-child{color:var(--t);font-weight:500;}
         <label>סניף</label>
         <select class="fc" id="l-biz"></select>
       </div>
-      <div class="lfield">
+      <div class="lfield" id="l-name-wrap">
         <label>שם</label>
         <input class="li" id="l-name" placeholder="ישראל ישראלי" type="text">
       </div>
       <div class="lfield">
         <label>קוד גישה</label>
-        <input class="li" id="l-code" placeholder="קוד גישה (1234)" type="password">
+        <input class="li" id="l-code" placeholder="קוד גישה" type="password">
       </div>
       <button class="lbtn" onclick="doLogin()">כניסה למערכת</button>
-      <div class="lhint">בעלים: קוד 1234 &nbsp;|&nbsp; עובד: שם פרטי בעברית</div>
     </div>
   </div>
 </div>
@@ -315,6 +314,7 @@ td:first-child{color:var(--t);font-weight:500;}
       <div class="lfield"><label class="fl">שם העובד</label><input class="fc" id="w-nm" placeholder="ישראל ישראלי"></div>
       <div class="lfield"><label class="fl">תפקיד</label><input class="fc" id="w-rl" placeholder="קופאי"></div>
       <div class="lfield"><label class="fl">שכר שעתי (₪)</label><input class="fc" id="w-hr" type="number" placeholder="40" min="0" step="0.5"></div>
+      <div class="lfield"><label class="fl">תעודת זהות</label><input class="fc" id="w-pin" type="number" placeholder="123456789" maxlength="9"></div>
     </div>
     <div class="mf"><button class="btn bg2" onclick="cm('mo-wrk')">ביטול</button><button class="btn bp" onclick="addWorker()">הוסף</button></div>
   </div>
@@ -569,20 +569,23 @@ function setLMode(mode, el) {
   var wrap = document.getElementById('l-biz-wrap');
   var nf = document.getElementById('l-name');
   var cf = document.getElementById('l-code');
+  var nw = document.getElementById('l-name-wrap');
   if(mode === 'employee') {
     wrap.style.display = 'block';
     fillSel('l-biz', biz.map(function(b) { return {v:b.id, l:b.name}; }));
-    if(nf) nf.placeholder = 'שם פרטי בעברית';
-    if(cf) cf.placeholder = 'לא נדרש';
+    if(nw) nw.style.display = 'none';
+    if(cf) cf.placeholder = '4 ספרות אחרונות ת"ז';
   } else if(mode === 'manager') {
     wrap.style.display = 'block';
     fillSel('l-biz', biz.map(function(b) { return {v:b.id, l:b.name}; }));
+    if(nw) nw.style.display = '';
     if(nf) nf.placeholder = 'שם מנהל';
     if(cf) cf.placeholder = 'קוד סניף';
   } else {
     wrap.style.display = 'none';
+    if(nw) nw.style.display = '';
     if(nf) nf.placeholder = 'שמך';
-    if(cf) cf.placeholder = 'קוד בעלים (1234)';
+    if(cf) cf.placeholder = 'קוד גישה';
   }
 }
 
@@ -606,9 +609,9 @@ function doLogin() {
     var bizId2 = parseInt(document.getElementById('l-biz').value);
     var worker = null;
     for(var i=0; i<wrk.length; i++) {
-      if(wrk[i].bizId===bizId2 && wrk[i].name.split(' ')[0]===name) { worker=wrk[i]; break; }
+      if(wrk[i].bizId===bizId2 && wrk[i].pin===code) { worker=wrk[i]; break; }
     }
-    if(!worker) { alert('עובד לא נמצא'); return; }
+    if(!worker) { alert('קוד שגוי או עובד לא נמצא'); return; }
     curUser = {type:'employee', name:worker.name, workerId:worker.id, bizId:bizId2};
   }
   document.getElementById('login-screen').style.display = 'none';
@@ -763,6 +766,7 @@ function editWorker(wid) {
   document.getElementById('w-nm').value  = w.name;
   document.getElementById('w-rl').value  = w.role||'';
   document.getElementById('w-hr').value  = w.hourly||'';
+  document.getElementById('w-pin').value = w.pin||'';
   // Change modal button to save edit
   var btn = document.querySelector('#mo-wrk .btn.bp');
   if(btn) { btn.textContent='שמור'; btn.onclick = function(){saveEditWorker(wid);}; }
@@ -779,6 +783,8 @@ function saveEditWorker(wid) {
       wrk[i].name   = nm;
       wrk[i].role   = document.getElementById('w-rl').value.trim();
       wrk[i].hourly = parseFloat(document.getElementById('w-hr').value)||0;
+      var idNum2 = document.getElementById('w-pin').value.trim();
+      wrk[i].pin = idNum2.length >= 4 ? idNum2.slice(-4) : idNum2;
       break;
     }
   }
@@ -918,7 +924,9 @@ function addWorker() {
   var role   = document.getElementById('w-rl').value.trim();
   var hourly = parseFloat(document.getElementById('w-hr').value) || 0;
   if(!name) { alert('יש להזין שם'); return; }
-  wrk.push({id:Date.now(), bizId:bizId, name:name, role:role, hourly:hourly});
+  var idNum = document.getElementById('w-pin').value.trim();
+  var pin = idNum.length >= 4 ? idNum.slice(-4) : idNum;
+  wrk.push({id:Date.now(), bizId:bizId, name:name, role:role, hourly:hourly, pin:pin});
   save(); cm('mo-wrk');
   resetWorkerModal();
   toast('העובד נוסף!'); renderBusinesses();
