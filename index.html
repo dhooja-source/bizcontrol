@@ -665,12 +665,74 @@ function doLogin() {
   document.getElementById('app').style.display = 'block';
   document.getElementById('nav-u').textContent = curUser.name;
   buildApp();
+  startNotifPolling();
 }
 
 function toggleDark() {
   var isDark = document.body.classList.toggle('dark');
   document.getElementById('dark-toggle').textContent = isDark ? '☀' : '🌙';
   try { localStorage.setItem('shifty-dark', isDark?'1':'0'); } catch(e){}
+}
+
+
+// ===
+// NOTIFICATIONS
+// ===
+var lastKnownPending = -1;
+
+function requestNotifPermission() {
+  if(!('Notification' in window)) return;
+  if(Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+function sendNotif(title, body) {
+  if(!('Notification' in window)) return;
+  if(Notification.permission !== 'granted') return;
+  try {
+    new Notification(title, {
+      body: body,
+      icon: 'icon-192.png',
+      badge: 'icon-192.png',
+      dir: 'rtl',
+      lang: 'he'
+    });
+  } catch(e) {}
+}
+
+function checkNewRequests() {
+  if(!curUser || curUser.type === 'employee') return;
+  var pending;
+  if(curUser.type === 'owner') {
+    pending = reqs.filter(function(r){return r.status==='pending';}).length;
+  } else {
+    var bizWrkIds = wrk.filter(function(w){return parseInt(w.bizId)===parseInt(curUser.bizId);}).map(function(w){return w.id;});
+    pending = reqs.filter(function(r){return r.status==='pending' && bizWrkIds.indexOf(r.workerId)!==-1;}).length;
+  }
+  if(lastKnownPending >= 0 && pending > lastKnownPending) {
+    var diff = pending - lastKnownPending;
+    sendNotif('SHIFTY - בקשות חדשות', diff + ' בקשות משמרת חדשות ממתינות לאישור');
+  }
+  lastKnownPending = pending;
+}
+
+function startNotifPolling() {
+  if(!curUser || curUser.type === 'employee') return;
+  requestNotifPermission();
+  lastKnownPending = -1;
+  checkNewRequests();
+  // Check every 60 seconds for new requests via Firebase sync
+  setInterval(function() {
+    if(!db || !curUser || curUser.type === 'employee') return;
+    db.collection('shifty').doc('data').get().then(function(doc) {
+      if(doc.exists && doc.data().reqs) {
+        reqs = doc.data().reqs;
+        lsSet('sh5_req', JSON.stringify(reqs));
+        checkNewRequests();
+      }
+    }).catch(function(){});
+  }, 60000);
 }
 
 function doLogout() {
@@ -2527,36 +2589,56 @@ try { if(localStorage.getItem('shifty-dark')==='1'){ document.body.classList.add
   loadFromFirebase();
 }
 
+function showLoginScreen() {
+  var ld = document.getElementById('fb-loading');
+  if(ld) ld.remove();
+  var ls = document.getElementById('login-screen');
+  if(ls) ls.style.display = 'flex';
+  var firstTab = document.querySelector('.ltab');
+  if(firstTab) setLMode('owner', firstTab);
+  if(curUser) buildApp();
+}
+
 function loadFromFirebase() {
   if(!db) return;
+
+  // Show login immediately if we have cached data
+  var hasCached = biz.length > 0 || wrk.length > 0;
+  if(hasCached) {
+    showLoginScreen();
+    // Sync in background
+    db.collection('shifty').doc('data').get().then(function(doc) {
+      if(doc.exists) {
+        var data = doc.data();
+        if(data.biz)  { biz  = data.biz;  lsSet('sh5_biz', JSON.stringify(biz)); }
+        if(data.wrk)  { wrk  = data.wrk;  lsSet('sh5_wrk', JSON.stringify(wrk)); }
+        if(data.shf)  { shf  = data.shf;  lsSet('sh5_shf', JSON.stringify(shf)); }
+        if(data.rep)  { rep  = data.rep;  lsSet('sh5_rep', JSON.stringify(rep)); }
+        if(data.reqs) { reqs = data.reqs; lsSet('sh5_req', JSON.stringify(reqs)); }
+        var lb = document.getElementById('l-biz');
+        if(lb) fillSel('l-biz', biz.map(function(b){ return {v:b.id, l:b.name}; }));
+        if(curUser) buildApp();
+      }
+    }).catch(function(e) { console.log('Firebase bg sync error:', e); });
+    return;
+  }
+
+  // No cache - wait for Firebase
   db.collection('shifty').doc('data').get().then(function(doc) {
     if(doc.exists) {
       var data = doc.data();
-      // Firebase is source of truth - always override local
       if(data.biz)  { biz  = data.biz;  lsSet('sh5_biz', JSON.stringify(biz)); }
       if(data.wrk)  { wrk  = data.wrk;  lsSet('sh5_wrk', JSON.stringify(wrk)); }
       if(data.shf)  { shf  = data.shf;  lsSet('sh5_shf', JSON.stringify(shf)); }
       if(data.rep)  { rep  = data.rep;  lsSet('sh5_rep', JSON.stringify(rep)); }
       if(data.reqs) { reqs = data.reqs; lsSet('sh5_req', JSON.stringify(reqs)); }
-      console.log('Firebase loaded: workers='+wrk.length+' biz='+biz.length);
       var lb = document.getElementById('l-biz');
       if(lb) fillSel('l-biz', biz.map(function(b){ return {v:b.id, l:b.name}; }));
     }
-    // Always show login after Firebase responds
-    var ld = document.getElementById('fb-loading');
-    if(ld) ld.remove();
-    var ls = document.getElementById('login-screen');
-    if(ls) ls.style.display = 'flex';
-    var firstTab = document.querySelector('.ltab'); if(firstTab) setLMode('owner', firstTab);
-    // If user already logged in (e.g. came back to tab), re-render
-    if(curUser) buildApp();
+    showLoginScreen();
   }).catch(function(e) {
     console.log('Firebase load error:', e);
-    var ld = document.getElementById('fb-loading');
-    if(ld) ld.remove();
-    var ls = document.getElementById('login-screen');
-    if(ls) ls.style.display = 'flex';
-    var firstTab = document.querySelector('.ltab'); if(firstTab) setLMode('owner', firstTab);
+    showLoginScreen();
   });
 }
 
@@ -2579,7 +2661,16 @@ document.addEventListener('DOMContentLoaded', function() {
   var loadDiv = document.createElement('div');
   loadDiv.id = 'fb-loading';
   loadDiv.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:var(--bg);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px';
-  loadDiv.innerHTML = '<div style="font-size:2rem;font-weight:900;color:var(--a)">SHIFTY</div><div style="color:var(--m);font-size:.85rem">טוען נתונים...</div>';
+  loadDiv.innerHTML = '<div style="font-size:2.2rem;font-weight:900;color:var(--a);letter-spacing:-1px">שיפטי</div>'
+    + '<div style="width:48px;height:48px;border:4px solid var(--b);border-top-color:var(--a);border-radius:50%;animation:spin .7s linear infinite;margin:8px 0"></div>'
+    + '<div style="color:var(--m);font-size:.82rem">טוען נתונים...</div>';
+  // Add spin animation if not present
+  if(!document.getElementById('spin-style')) {
+    var st = document.createElement('style');
+    st.id = 'spin-style';
+    st.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(st);
+  }
   document.body.appendChild(loadDiv);
   if(loginScreen) loginScreen.style.display = 'none';
 
@@ -2596,7 +2687,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if(ls2 && ls2.style.display === 'none') ls2.style.display = 'flex';
     var firstTab = document.querySelector('.ltab');
     if(firstTab) setLMode('owner', firstTab);
-  }, 8000);
+  }, 5000);
 });
 </script>
 
